@@ -11,5 +11,17 @@ interpreter techniques.
 
 The recommended way to manage dependencies and run this is using [`uv`](https://github.com/astral-sh/uv).
 
+To run the program with a manual REPL loop:
+
+```shell
+uv run --script main.py
+```
+
+To run with some testdata file:
+
+```shell
+uv run --script main.py testdata/tokens.txt
+```
+
 * Unit tests: `uv run pytest`
 * Unit tests with program output and summary: `uv run pytest -rA -s`
