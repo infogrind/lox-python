@@ -118,3 +118,26 @@ class TestCharReader(unittest.TestCase):
         # The character number should still be the last read one.
         self.assertEqual(c.line_no(), 4)
         self.assertEqual(c.char_no(), 3)
+
+    def test_diagnostic_message(self):
+        c = CharReader(iter(["a bc x"]))
+        self.assertEqual(
+            c.diagnostic_string(),
+            """\
+  a bc x
+  ^
+  ┗--- here\
+""",
+        )
+
+        c.next()
+        c.next()
+
+        self.assertEqual(
+            c.diagnostic_string(),
+            """\
+  a bc x
+    ^
+    ┗--- here\
+""",
+        )

@@ -10,6 +10,13 @@ class CharReader:
     def __init__(self, line_iter: Iterator[str]):
         self._line_iter = line_iter
         self._line_no = 0  # Value if input has no lines
+
+        # Keep the processed line in a separate variable. This always
+        # corresponds to the line number in _line_no. If we encounter the end
+        # of input, self._head_line will be None, but self._processed_line
+        # should still contain the last processed line. This will be used to
+        # still display a line for, say, "unexpected end of input" errors.
+        self._processed_line = ""
         self._char_no = 0
         self._load_line()
         self._load_char()
@@ -24,6 +31,7 @@ class CharReader:
             try:
                 self._head_line = next(self._line_iter)
                 self._line_no = self._line_no + 1
+                self._processed_line = self._head_line
                 self._char_iter = iter(self._head_line)
                 self._char_no = 0
             except StopIteration:
@@ -75,9 +83,25 @@ class CharReader:
         or 0 if no character has been processed (e.g. if the current line is an
         empty line).
 
-        "Processed" means it has actually been read from the input and is available to next() or peek().
+        "Processed" means it has actually been read from the input and is
+        available to next() or peek().
         """
         return self._char_no
+
+    def diagnostic_string(self):
+        """
+        Returns a string that shows the last processed line and visually
+        depicts the last processed position. Useful for error messages.
+        """
+        if not self._processed_line:
+            return "(can't determine position, maybe there was no input at all)"
+
+        # The entire diagnostic message is indented by two spaces.
+        output = ["  " + self._processed_line]
+        arrow_indent = "  " + " " * (self._char_no - 1)
+        output.append(arrow_indent + "^")
+        output.append(arrow_indent + "┗--- here")
+        return "\n".join(output)
 
     def next(self) -> str:
         """
