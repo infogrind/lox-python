@@ -8,7 +8,9 @@ class CharReader:
     """
 
     def __init__(self, line_iter: Iterator[str]):
-        self.line_iter = line_iter
+        self._line_iter = line_iter
+        self._line_no = 0  # Value if input has no lines
+        self._char_no = 0
         self._load_line()
         self._load_char()
 
@@ -20,13 +22,15 @@ class CharReader:
         """
         while True:
             try:
-                self.head_line = next(self.line_iter)
-                self.char_iter = iter(self.head_line)
+                self._head_line = next(self._line_iter)
+                self._line_no = self._line_no + 1
+                self._char_iter = iter(self._head_line)
+                self._char_no = 0
             except StopIteration:
                 # End of lines reached
-                self.head_line = None
+                self._head_line = None
                 return
-            if self.head_line != "":
+            if self._head_line != "":
                 # Found next non-empty line.
                 break
             # Continue to skip empty lines.
@@ -37,35 +41,53 @@ class CharReader:
         it accessible by peek(). If there are no more characters, head_char is
         set to none.
         """
-        if self.head_line is None:
+        if self._head_line is None:
             # No more lines in line iterator, therefore also no more characters.
-            self.head_char = None
+            self._head_char = None
             return
         try:
-            self.head_char = next(self.char_iter)
+            self._head_char = next(self._char_iter)
+            self._char_no = self._char_no + 1
         except StopIteration:
             # First see if there is another line to read.
             self._load_line()
-            if self.head_line is None:
+            if self._head_line is None:
                 # We have reached the end of characters and lines.
-                self.head_char = None
+                self._head_char = None
             else:
                 try:
-                    self.head_char = next(self.char_iter)
+                    self._head_char = next(self._char_iter)
+                    self._char_no = self._char_no = 1
                 except StopIteration:
                     # We must have read an empty line. That is a bug, because load_line should skip
                     # empty lines.
                     raise RuntimeError("Illegal state detected, probably a bug.")
+
+    def line_no(self):
+        """
+        Returns the number of the last processed line.
+        """
+        return self._line_no
+
+    def char_no(self):
+        """
+        Returns the number of the last processed character in the current line,
+        or 0 if no character has been processed (e.g. if the current line is an
+        empty line).
+
+        "Processed" means it has actually been read from the input and is available to next() or peek().
+        """
+        return self._char_no
 
     def next(self) -> str:
         """
         Returns the next character and advances to the next character.
         Raises StopIteration if there are no more characters.
         """
-        if self.head_char is None:
+        if self._head_char is None:
             raise StopIteration
 
-        result = self.head_char
+        result = self._head_char
         self._load_char()
         return result
 
@@ -73,7 +95,7 @@ class CharReader:
         """
         Returns True if there is still a character to read, false otherwise.
         """
-        return self.head_char is not None
+        return self._head_char is not None
 
     def peek(self) -> str:
         """
@@ -81,6 +103,6 @@ class CharReader:
         without advancing. Raises StopIteration if there is no more character
         to read.
         """
-        if self.head_char is None:
+        if self._head_char is None:
             raise StopIteration
-        return self.head_char
+        return self._head_char
