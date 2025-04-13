@@ -1,7 +1,7 @@
 [project]
-name = "tokentest"
+name = "lox-python"
 version = "0.1.0"
-description = "Add your description here"
+description = "Python version of the Lox interpreter from the book 'Crafting Interpreters' by Bob Nystrom"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
