@@ -141,3 +141,20 @@ class TestCharReader(unittest.TestCase):
     ┗--- here\
 """,
         )
+
+    def test_diagnostic_message_newlines(self):
+        c = CharReader(iter(["a\n", "  b\n"]))
+
+        # Eat everything up to b
+        c.next()
+        c.next()
+        c.next()
+        c.next()
+
+        self.assertEqual(
+            c.diagnostic_string(),
+            """\
+    b
+    ^
+    ┗--- here""",
+        )

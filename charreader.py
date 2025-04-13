@@ -31,7 +31,7 @@ class CharReader:
             try:
                 self._head_line = next(self._line_iter)
                 self._line_no = self._line_no + 1
-                self._processed_line = self._head_line
+                self._processed_line = self._head_line.rstrip()
                 self._char_iter = iter(self._head_line)
                 self._char_no = 0
             except StopIteration:
