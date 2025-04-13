@@ -94,11 +94,12 @@ class CharReader:
         depicts the last processed position. Useful for error messages.
         """
         if not self._processed_line:
-            return "(can't determine position, maybe there was no input at all)"
+            return "  (can't determine position, maybe there was no input at all)"
 
         # The entire diagnostic message is indented by two spaces.
-        output = ["  " + self._processed_line]
-        arrow_indent = "  " + " " * (self._char_no - 1)
+        line_prefix = f"{self._line_no:>5}: "
+        output = [line_prefix + self._processed_line]
+        arrow_indent = " " * len(line_prefix) + " " * (self._char_no - 1)
         output.append(arrow_indent + "^")
         output.append(arrow_indent + "┗--- here")
         return "\n".join(output)

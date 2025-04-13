@@ -68,7 +68,13 @@ class ScannerTest(unittest.TestCase):
         with self.assertRaises(ScannerError) as context:
             scanner.next()
         self.assertEqual(
-            str(context.exception), "Unexpected end of string at input 1:13"
+            str(context.exception),
+            """\
+Unexpected end of string:
+    1: (var ("hund))
+                   ^
+                   ┗--- here\
+""",
         )
 
     def test_illegal_token(self):
@@ -78,7 +84,12 @@ class ScannerTest(unittest.TestCase):
         with self.assertRaises(ScannerError) as context:
             scanner.next()
         self.assertEqual(
-            str(context.exception), "Invalid token character '2' at input 1:6"
+            str(context.exception),
+            """\
+Invalid token character:
+    1: (var 27)
+            ^
+            ┗--- here""",
         )
 
     def test_illegal_token_emoji(self):
@@ -88,7 +99,12 @@ class ScannerTest(unittest.TestCase):
         with self.assertRaises(ScannerError) as context:
             scanner.next()
         self.assertEqual(
-            str(context.exception), "Invalid token character '😂' at input 1:6"
+            str(context.exception),
+            """\
+Invalid token character:
+    1: (var 😂)
+            ^
+            ┗--- here""",
         )
 
     def test_error_position_whitespace(self):
@@ -98,7 +114,12 @@ class ScannerTest(unittest.TestCase):
         with self.assertRaises(ScannerError) as context:
             scanner.next()
         self.assertEqual(
-            str(context.exception), "Invalid token character '2' at input 1:11"
+            str(context.exception),
+            """\
+Invalid token character:
+    1: (   var   27)
+                 ^
+                 ┗--- here""",
         )
 
     def test_error_position_multiline(self):
@@ -108,5 +129,10 @@ class ScannerTest(unittest.TestCase):
         with self.assertRaises(ScannerError) as context:
             scanner.next()
         self.assertEqual(
-            str(context.exception), "Invalid token character '2' at input 2:4"
+            str(context.exception),
+            """\
+Invalid token character:
+    2:    27)
+          ^
+          ┗--- here""",
         )

@@ -28,7 +28,12 @@ class Scanner:
         while True:
             if not self.char_reader.has_next():
                 return ScannerError(
-                    f"Unexpected end of string at input {self.char_reader.line_no()}:{self.char_reader.char_no()}"
+                    "\n".join(
+                        [
+                            "Unexpected end of string:",
+                            self.char_reader.diagnostic_string(),
+                        ]
+                    )
                 )
             c = self.char_reader.next()
             if c == '"':
@@ -86,7 +91,9 @@ class Scanner:
             self._next_token = self._scan_ident()
         else:
             self._next_token = ScannerError(
-                f"Invalid token character '{c}' at input {self.char_reader.line_no()}:{self.char_reader.char_no()}"
+                "\n".join(
+                    ["Invalid token character:", self.char_reader.diagnostic_string()]
+                )
             )
 
     def next(self):

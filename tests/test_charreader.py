@@ -124,9 +124,9 @@ class TestCharReader(unittest.TestCase):
         self.assertEqual(
             c.diagnostic_string(),
             """\
-  a bc x
-  ^
-  ┗--- here\
+    1: a bc x
+       ^
+       ┗--- here\
 """,
         )
 
@@ -136,9 +136,9 @@ class TestCharReader(unittest.TestCase):
         self.assertEqual(
             c.diagnostic_string(),
             """\
-  a bc x
-    ^
-    ┗--- here\
+    1: a bc x
+         ^
+         ┗--- here\
 """,
         )
 
@@ -154,7 +154,7 @@ class TestCharReader(unittest.TestCase):
         self.assertEqual(
             c.diagnostic_string(),
             """\
-    b
-    ^
-    ┗--- here""",
+    2:   b
+         ^
+         ┗--- here""",
         )
