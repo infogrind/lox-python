@@ -17,8 +17,14 @@ class _DiagnosticState:
     line_no: int  # Dito for the line.
     line: str | None  # The actual line of input.
 
-    def increase_line(self) -> None:
+    def update_line(self, line: str):
+        """
+        Update the state for a newly read line.
+        """
+        # We don't keep any trailing newline.
+        self.line = line.rstrip()
         self.line_no = self.line_no + 1
+        self.col_no = 0
 
     def increase_col(self) -> None:
         self.col_no = self.col_no + 1
@@ -117,9 +123,7 @@ class CharReader:
                 # Update the diagnostic information.
                 if not self._last_processed_state:
                     self._last_processed_state = _DiagnosticState(0, 0, "")
-                self._last_processed_state.increase_line()
-                self._last_processed_state.col_no = 0
-                self._last_processed_state.line = line.rstrip()
+                self._last_processed_state.update_line(line)
 
                 if not line:
                     # Skip over empty lines.
