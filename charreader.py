@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Iterator
 
 
@@ -19,7 +19,7 @@ class _DiagnosticState:
 
     col_no: int  # The column at which the character was located.
     line_no: int  # Dito for the line.
-    line: str  # The actual line of input.
+    line: str | None  # The actual line of input.
 
 
 class CharReader:
@@ -40,9 +40,7 @@ class CharReader:
         # the last character read from the input, except if no character could
         # ever be read (e.g. if the input was empty), in which case they keep
         # their initial values assigned here.
-        self._last_processed_line = None
-        self._last_read_line_no = 0  # Value if input has no lines
-        self._last_read_char_no = 0
+        self._last_processed_state = _DiagnosticState(0, 0, None)
 
         # Initialize the state: load the first line and the first character.
         self._advance_line()
@@ -70,9 +68,11 @@ class CharReader:
                 self._char_iter = iter(self._head_line)
 
                 # Update the diagnostic information.
-                self._last_read_line_no = self._last_read_line_no + 1
-                self._last_read_char_no = 0
-                self._last_processed_line = self._head_line.rstrip()
+                self._last_processed_state.line_no = (
+                    self._last_processed_state.line_no + 1
+                )
+                self._last_processed_state.col_no = 0
+                self._last_processed_state.line = self._head_line.rstrip()
             except StopIteration:
                 # End of lines reached
                 self._head_line = None
@@ -94,21 +94,17 @@ class CharReader:
             return
         try:
             self._head_char = next(self._char_iter)
-            self._last_read_char_no = self._last_read_char_no + 1
+            self._last_processed_state.col_no = self._last_processed_state.col_no + 1
 
             # Just to placate the linter and fail explicitly. But since _head_line is not None, it
             # means that _last_processed_line has been set.
-            if self._last_processed_line is None:
+            if self._last_processed_state.line is None:
                 raise RuntimeError(
                     "Internal error: expected _last_processed_line to not be None."
                 )
 
             # Update read state
-            self._head_state = _DiagnosticState(
-                self._last_read_char_no,
-                self._last_read_line_no,
-                self._last_processed_line,
-            )
+            self._head_state = replace(self._last_processed_state)
         except StopIteration:
             # First see if there is another line to read.
             self._advance_line()
@@ -123,12 +119,17 @@ class CharReader:
             else:
                 try:
                     self._head_char = next(self._char_iter)
-                    self._last_read_char_no = self._last_read_char_no = 1
-                    self._head_state = _DiagnosticState(
-                        self._last_read_char_no,
-                        self._last_read_line_no,
-                        self._last_processed_line,
+                    self._last_processed_state.col_no = (
+                        self._last_processed_state.col_no + 1
                     )
+
+                    # Placate the linter
+                    if self._last_processed_state.line is None:
+                        raise RuntimeError(
+                            "Internal error: expected _last_processed_line to not be None."
+                        )
+
+                    self._head_state = replace(self._last_processed_state)
 
                 except StopIteration:
                     # We must have read an empty line. That is a bug, because load_line should skip
@@ -157,13 +158,13 @@ class CharReader:
         Returns a string that shows the last processed line and visually
         depicts the last processed position. Useful for error messages.
         """
-        if self._head_state is None:
+        if self._head_state.line is None:
             return "  (can't determine position, maybe there was no input at all)"
 
         # The entire diagnostic message is indented by two spaces.
-        line_prefix = f"{self._last_read_line_no:>5}: "
-        output = [line_prefix + self._last_processed_line]
-        arrow_indent = " " * len(line_prefix) + " " * (self._last_read_char_no - 1)
+        line_prefix = f"{self._head_state.line_no:>5}: "
+        output = [line_prefix + self._head_state.line]
+        arrow_indent = " " * len(line_prefix) + " " * (self._head_state.col_no - 1)
         output.append(arrow_indent + "^")
         output.append(arrow_indent + "┗--- here")
         return "\n".join(output)
