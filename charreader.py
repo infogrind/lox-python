@@ -61,10 +61,14 @@ class CharReader:
     functionality for lookahead.
     """
 
-    _BUFFER_SIZE = 1
+    def __init__(self, line_iter: Iterator[str], bufsize: int = 1):
+        if bufsize < 1:
+            # In theory we could also support an unbuffered version, but that
+            # is currently not implemented.
+            raise ValueError("Buffer size must be positive, to support peeking.")
 
-    def __init__(self, line_iter: Iterator[str]):
         self._line_iter = line_iter
+        self._bufsize = bufsize
         self._buffer: Deque[_ReadCharState] = deque()
 
         # Variables to support the diagnostic state. These always correspond to
@@ -120,10 +124,10 @@ class CharReader:
 
     def _refill_buffer(self) -> None:
         """
-        Loads characters from the input until the buffer is again at _BUFFER_SIZE
+        Loads characters from the input until the buffer is again at _bufsize
         or until the end of the input has been reached.
         """
-        if len(self._buffer) >= CharReader._BUFFER_SIZE:
+        if len(self._buffer) >= self._bufsize:
             # Nothing to do.
             return
         if self._head_line is None:
@@ -202,7 +206,7 @@ class CharReader:
             # Empty buffer, nothing to return.
             raise StopIteration
 
-        result = self._buffer.pop().char
+        result = self._buffer.popleft().char
 
         # Always keep the buffer full.
         self._refill_buffer()
@@ -214,12 +218,26 @@ class CharReader:
         """
         return bool(self._buffer)
 
-    def peek(self) -> str:
+    def can_peek(self, offset=0) -> bool:
+        """
+        Returns true if it is possible to "peek" offset characters ahead.
+        can_peek(0) is equivalent to has_next(). The invariant is that if
+        can_peek(offset) is true, then peek(offset) returns a valid value. If
+        can_peek(offset) is false, then peek(offset) would throw a
+        StopIteration exception.
+        """
+        if offset < 0:
+            raise ValueError(f"Invalid negative offset: {offset}")
+        return offset <= len(self._buffer) - 1
+
+    def peek(self, offset=0) -> str:
         """
         Returns the character that would be returned by a call to next(),
         without advancing. Raises StopIteration if there is no more character
         to read.
         """
-        if not self._buffer:
+        if offset < 0:
+            raise ValueError(f"Invalid negative offset: {offset}")
+        if offset > len(self._buffer) - 1:
             raise StopIteration
-        return self._buffer[0].char
+        return self._buffer[offset].char

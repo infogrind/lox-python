@@ -142,6 +142,29 @@ class TestCharReader(unittest.TestCase):
 """,
         )
 
+    def test_diagnostic_message_long_buffer(self):
+        c = CharReader(iter(["a bc x"]), 10)
+        self.assertEqual(
+            c.diagnostic_string(),
+            """\
+    1: a bc x
+       ^
+       ┗--- here\
+""",
+        )
+
+        c.next()
+        c.next()
+
+        self.assertEqual(
+            c.diagnostic_string(),
+            """\
+    1: a bc x
+         ^
+         ┗--- here\
+""",
+        )
+
     def test_diagnostic_message_newlines(self):
         c = CharReader(iter(["a\n", "  b\n"]))
 
@@ -179,3 +202,78 @@ class TestCharReader(unittest.TestCase):
          ^
          ┗--- here""",
         )
+
+    def test_longer_buffer_peek_and_next_single_line(self):
+        c = CharReader(iter(["Hello\n"]), 2)
+
+        self.assertTrue(c.has_next())
+        self.assertTrue(c.can_peek((0)))
+        self.assertTrue(c.can_peek((1)))
+        self.assertFalse(c.can_peek((2)))
+        self.assertEqual(c.peek(0), "H")
+        self.assertEqual(c.peek(1), "e")
+        self.assertEqual(c.next(), "H")
+
+        self.assertTrue(c.has_next())
+        self.assertEqual(c.peek(0), "e")
+        self.assertEqual(c.peek(1), "l")
+        self.assertEqual(c.next(), "e")
+
+        self.assertTrue(c.has_next())
+        self.assertEqual(c.peek(0), "l")
+        self.assertEqual(c.peek(1), "l")
+        self.assertEqual(c.next(), "l")
+
+        self.assertTrue(c.has_next())
+        self.assertEqual(c.peek(0), "l")
+        self.assertEqual(c.peek(1), "o")
+        self.assertEqual(c.next(), "l")
+
+        self.assertTrue(c.has_next())
+        self.assertEqual(c.peek(0), "o")
+        self.assertEqual(c.peek(1), "\n")
+        self.assertEqual(c.next(), "o")
+
+        self.assertTrue(c.has_next())
+        self.assertEqual(c.peek(0), "\n")
+
+        # Peeking further than allowed.
+        self.assertFalse(c.can_peek(1))
+        self.assertFalse(c.can_peek(2))
+        with self.assertRaises(StopIteration):
+            c.peek(1)
+        with self.assertRaises(StopIteration):
+            c.peek(2)
+        self.assertEqual(c.next(), "\n")
+
+        self.assertFalse(c.has_next())
+
+    def test_offsets_with_empty_input(self):
+        c = CharReader(iter([""]), 10)
+        self.assertFalse(c.has_next())
+        self.assertFalse(c.can_peek(0))
+
+    def test_longer_buffer_with_multiple_lines_in_input(self):
+        c = CharReader(iter(["ab", "c\n", "\n", "", "x"]), 10)
+        self.assertEqual(c.peek(0), "a")
+        self.assertEqual(c.peek(3), "\n")
+        self.assertEqual(c.peek(5), "x")
+        self.assertFalse(c.can_peek(6))
+
+    def test_invalid_buffer_length(self):
+        with self.assertRaises(ValueError):
+            CharReader(iter(["asd"]), 0)
+
+        with self.assertRaises(ValueError):
+            CharReader(iter(["asd"]), -1)
+
+    def test_invalid_peek_value(self):
+        c = CharReader(iter(["asdf"]), 10)
+        with self.assertRaises(ValueError):
+            c.can_peek(-1)
+        with self.assertRaises(ValueError):
+            c.can_peek(-10)
+        with self.assertRaises(ValueError):
+            c.peek(-1)
+        with self.assertRaises(ValueError):
+            c.peek(-10)
