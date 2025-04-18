@@ -145,8 +145,14 @@ class CharReader:
 
     def diagnostic_string(self) -> str:
         """
-        Returns a string that shows the last processed line and visually
-        depicts the last processed position. Useful for error messages.
+        Returns a string that indentifies the last character read into head, by
+        printing the containing line and an arrow that points to the character in the line.
+
+        If the head character is None, meaning we have returned the last available character,
+        the diagnostic information is still for the last character read into head, so you can use
+        it in errors like "unexpected end of input".
+
+        Note that once a character is returned by next(), the diagnostic information is lost.
         """
         if not self._head_state.has_state():
             return "  (can't determine position, maybe there was no input at all)"
