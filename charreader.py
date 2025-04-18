@@ -17,9 +17,6 @@ class _DiagnosticState:
     line_no: int  # Dito for the line.
     line: str | None  # The actual line of input.
 
-    def has_state(self) -> bool:
-        return self.line is not None
-
     def increase_line(self) -> None:
         self.line_no = self.line_no + 1
 
