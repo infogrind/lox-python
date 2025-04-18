@@ -256,3 +256,22 @@ class CharReader:
         if offset > len(self._buffer) - 1:
             raise StopIteration
         return self._buffer[offset].char
+
+    def eat(self, c: str) -> bool:
+        """
+        If the next character that would be returned by next() matches c,
+        this function consumes it and returns true. Otherwise, it returns false and does not consume
+        anything.
+
+        If has_next() would return False, the function raises StopIteration.
+        """
+        if len(c) != 1:
+            raise ValueError(f"eat() requires exactly one character. Found: {c}")
+        if not self.has_next():
+            raise StopIteration
+
+        if self.peek() == c:
+            self.next()
+            return True
+
+        return False

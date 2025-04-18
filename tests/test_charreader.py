@@ -277,3 +277,12 @@ class TestCharReader(unittest.TestCase):
             c.peek(-1)
         with self.assertRaises(ValueError):
             c.peek(-10)
+
+    def test_eat(self):
+        c = CharReader(iter(["asdf"]))
+        self.assertTrue(c.eat("a"))
+        self.assertTrue(c.eat("s"))
+        self.assertFalse(c.eat("x"))
+        self.assertTrue(c.eat("d"))
+        self.assertTrue(c.eat("f"))
+        self.assertFalse(c.has_next())
