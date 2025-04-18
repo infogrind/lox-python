@@ -9,14 +9,8 @@ class _DiagnosticState:
     """
     Represents the information to diagnose problems related to a specific read
     character: At which line and column it was found, and a string with the
-    actual line.
-
-    The invariant is that this is in sync with the buffer, except in these
-    cases:
-    - If the end of input has been reached, head_char will be None, but the
-      diagnostic state will still be that of the previous character.
-    - If there was never any input (we started out with an empty input), then
-      the diagnostic state is None.
+    actual line. It also offers functionality to print a human-readable string
+    indicating at which place exactly an error occurred.
     """
 
     col_no: int  # The column at which the character was located.
@@ -58,69 +52,90 @@ class _ReadCharState:
 class CharReader:
     """
     A reader to read characters from successive lines. Offers a peek()
-    functionality for lookahead.
+    functionality for lookahead, with a configurable buffer length, depending
+    on how much lookahead is needed.
     """
 
     def __init__(self, line_iter: Iterator[str], bufsize: int = 1):
+        """
+        Creates a new CharReader.
+
+        Arguments:
+          line_iter:    An iterator yielding successive lines of input, for
+                        example from a file.
+          bufsize:      Size of the buffer. The charreader keps reading
+                        characters until the buffer is full or the end of the
+                        input has been reached. When a character is read from
+                        the buffer, the next character is read and appended to
+                        the end of the buffer (queue).
+
+        """
         if bufsize < 1:
             # In theory we could also support an unbuffered version, but that
             # is currently not implemented.
             raise ValueError("Buffer size must be positive, to support peeking.")
 
-        self._line_iter = line_iter
+        ########################################################################
+        # Class state and invariants
+        ########################################################################
+
+        # Stores the provided iterator, used to fetch new lines from the input.
+        self._line_iter: Iterator[str] = line_iter
+
+        # The provided buffer size, immutable.
         self._bufsize = bufsize
+
+        # The buffer itself, implemented as a deque but a simple queue would be
+        # enough.
         self._buffer: Deque[_ReadCharState] = deque()
 
-        # Variables to support the diagnostic state. These always correspond to
-        # the last position actually read from the file. Because CharReader
-        # does buffering, the diagnostic state of buffered characters are kept
-        # in a separate _DiagnosticState object for each buffered character.
+        # This stores the diagnostic state of the latest character successfully
+        # read from the input. We keep this explicitly to support the case
+        # where the end of the input has been reached, the buffer has been
+        # emptied, but we still need this info. This is normally for the error
+        # "unexpected end of input: …".
         #
-        # The invariant is that these variables always match the information of
-        # the last character read from the input, except if no character could
-        # ever be read (e.g. if the input was empty), in which case they keep
-        # their initial values assigned here.
-        self._last_processed_state = _DiagnosticState(0, 0, None)
+        # If this is None, it means we never read any input, i.e., the given
+        # input was empty.
+        self._last_processed_state: _DiagnosticState | None = None
 
-        # Initialize the state: load the first line and the first character.
+        # Initialize the state: load the first line and replenish the buffer.
         self._advance_line()
         self._refill_buffer()
 
     def _advance_line(self):
         """
-        Loads the next non-empty line from the input iterator into head_line, and resets
-        the _char_iter.
-
-        If the input iterator has no more elements, head_line is set to none.
+        Loads the next non-empty line from the input iterator and resets
+        the _char_iter to consume it. After this is called, one of two
+        situations arise:
+        - char_iter is None, which means the end of the input has been reached,
+          or
+        - char_iter is not None, in which case we can continue to read
+          characters.
         """
         while True:
             try:
-                # _head_line is the last line read from the input, or None if
-                # the end of lines has been reached. Then each successive
-                # character is read from this variable until the end, when the
-                # next line is loaded.
-                self._head_line = next(self._line_iter)
-
-                # Note that empty lines are not handled in any special way. If
-                # the line read was empty, then the next call to _advance_char
-                # will just trigger _advance_line again.
-
-                # Reset the iterator that iterates through individual characters.
-                self._char_iter = iter(self._head_line)
+                line = next(self._line_iter)
 
                 # Update the diagnostic information.
+                if not self._last_processed_state:
+                    self._last_processed_state = _DiagnosticState(0, 0, "")
                 self._last_processed_state.increase_line()
                 self._last_processed_state.col_no = 0
-                self._last_processed_state.line = self._head_line.rstrip()
+                self._last_processed_state.line = line.rstrip()
+
+                if not line:
+                    # Skip over empty lines.
+                    continue
+
+                # Reset the iterator that iterates through individual characters.
+                self._char_iter = iter(line)
+                break
 
             except StopIteration:
                 # End of lines reached
-                self._head_line = None
+                self._char_iter = None
                 return
-            if self._head_line != "":
-                # Found next non-empty line.
-                break
-            # Continue to skip empty lines.
 
     def _refill_buffer(self) -> None:
         """
@@ -130,7 +145,7 @@ class CharReader:
         if len(self._buffer) >= self._bufsize:
             # Nothing to do.
             return
-        if self._head_line is None:
+        if self._char_iter is None:
             return
         try:
             read_char = next(self._char_iter)
@@ -142,6 +157,8 @@ class CharReader:
             # char_iter at the start of it, or sets the line to None. In either case, we can call _advance_char
             # recursively, because we know we won't make another recursive call.
             return self._refill_buffer()
+
+        assert self._last_processed_state, "Unexpectedly missing state."
 
         # We've successfully read a character from the current line, so we can update the state.
         self._last_processed_state.increase_col()
@@ -158,7 +175,7 @@ class CharReader:
         """
         if self._buffer:
             return self._buffer[0].diags.line_no
-        elif self._last_processed_state.has_state():
+        elif self._last_processed_state:
             return self._last_processed_state.line_no
         else:
             return 0
@@ -174,7 +191,7 @@ class CharReader:
         """
         if self._buffer:
             return self._buffer[0].diags.col_no
-        elif self._last_processed_state.has_state():
+        elif self._last_processed_state:
             return self._last_processed_state.col_no
         else:
             return 0
@@ -192,7 +209,7 @@ class CharReader:
         """
         if self._buffer:
             return self._buffer[0].diags.diagnostic_string()
-        elif self._last_processed_state.has_state():
+        elif self._last_processed_state:
             return self._last_processed_state.diagnostic_string()
         else:
             return "  (can't determine position, maybe there was no input at all)"
