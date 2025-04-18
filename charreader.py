@@ -143,32 +143,29 @@ class CharReader:
         Loads characters from the input until the buffer is again at _bufsize
         or until the end of the input has been reached.
         """
-        if len(self._buffer) >= self._bufsize:
-            # Nothing to do.
-            return
-        if self._char_iter is None:
-            return
-        try:
-            read_char = next(self._char_iter)
-            # End of current line, need to advance.
-        except StopIteration:
-            self._advance_line()
+        while len(self._buffer) < self._bufsize:
+            if not self._char_iter:
+                # Already at end of input.
+                return
+            try:
+                char = next(self._char_iter)
+            except StopIteration:
+                # End of current line, need to advance.
+                self._advance_line()
 
-            # _advance_line either sets the current line to a non-empty one and points the
-            # char_iter at the start of it, or sets the line to None. In either case, we can call _advance_char
-            # recursively, because we know we won't make another recursive call.
-            return self._refill_buffer()
+                # Continue with the next character.
+                continue
 
-        assert self._last_processed_state, "Unexpectedly missing state."
+            # At this point, we've successfully read the next character.
 
-        # We've successfully read a character from the current line, so we can update the state.
-        self._last_processed_state.increase_col()
-        self._buffer.append(
-            _ReadCharState(read_char, replace(self._last_processed_state))
-        )
+            # The state should always be set when a character could successfully be read.
+            assert self._last_processed_state, "State unexpectedly missing."
 
-        # Recursively iterate until the buffer is full.
-        return self._refill_buffer()
+            # We've successfully read a character from the current line, so we can update the state.
+            self._last_processed_state.increase_col()
+            self._buffer.append(
+                _ReadCharState(char, replace(self._last_processed_state))
+            )
 
     def line_no(self) -> int:
         """
