@@ -64,14 +64,14 @@ class CharReader:
 
         # Initialize the state: load the first line and the first character.
         self._advance_line()
+        self._advance_char()
 
     def _advance_line(self):
         """
-        Loads the next non-empty line from the input iterator into head_line, resets
-        the _char_iter, and loads a new character into _head_char.
+        Loads the next non-empty line from the input iterator into head_line, and resets
+        the _char_iter.
 
-        If the input iterator has no more elements, head_line and head_char are
-        set to none.
+        If the input iterator has no more elements, head_line is set to none.
         """
         while True:
             try:
@@ -96,32 +96,31 @@ class CharReader:
             except StopIteration:
                 # End of lines reached
                 self._head_line = None
-                self._head_char = None
                 return
             if self._head_line != "":
                 # Found next non-empty line.
-                self._head_char = next(self._char_iter)
-                self._last_processed_state.increase_col()
-                self._head_state = replace(self._last_processed_state)
                 break
             # Continue to skip empty lines.
 
-    def _advance_char(self):
+    def _advance_char(self) -> None:
         """
         Loads the next character from the current line into head_char, to make
         it accessible by peek(). Advances to the next line if needed. If there
-        are no more characters, head_char is
-        set to none.
+        are no more characters, head_char is set to none.
         """
         if self._head_line is None:
-            # Nothing to do. This operation is idempotent.
+            self._head_char = None
             return
         try:
             self._head_char = next(self._char_iter)
             # End of current line, need to advance.
         except StopIteration:
             self._advance_line()
-            return
+
+            # _advance_line either sets the current line to a non-empty one and points the
+            # char_iter at the start of it, or sets the line to None. In either case, we can call _advance_char
+            # recursively, because we know we won't make another recursive call.
+            return self._advance_char()
 
         # We've successfully read a character from the current line, so we can update the state.
         self._last_processed_state.increase_col()
