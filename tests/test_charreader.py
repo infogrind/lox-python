@@ -145,12 +145,33 @@ class TestCharReader(unittest.TestCase):
     def test_diagnostic_message_newlines(self):
         c = CharReader(iter(["a\n", "  b\n"]))
 
-        # Eat everything up to b
+        # Eat everything up to but excluding b (the newlines are read as
+        # individual characters).
         c.next()
         c.next()
         c.next()
         c.next()
 
+        self.assertEqual(
+            c.diagnostic_string(),
+            """\
+    2:   b
+         ^
+         ┗--- here""",
+        )
+
+    def test_diagnostic_message_col_remains_at_last_char(self):
+        # Note that 'b' is the last character. If we call next() again, the diagnostic
+        # message should still point at b.
+        c = CharReader(iter(["a\n", "  b"]))
+
+        # Eat everything up to and including b.
+        c.next()
+        c.next()
+        c.next()
+        c.next()
+
+        # The diagnistic message should still point at b.
         self.assertEqual(
             c.diagnostic_string(),
             """\
