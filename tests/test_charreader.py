@@ -285,4 +285,4 @@ class TestCharReader(unittest.TestCase):
         self.assertFalse(c.eat("x"))
         self.assertTrue(c.eat("d"))
         self.assertTrue(c.eat("f"))
-        self.assertFalse(c.has_next())
+        self.assertFalse(c.eat("x"))

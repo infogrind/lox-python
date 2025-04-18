@@ -75,6 +75,11 @@ class EQUAL(Token):
 
 
 @dataclass
+class EQUAL_EQUAL(Token):
+    pass
+
+
+@dataclass
 class GREATER(Token):
     pass
 
@@ -109,7 +114,7 @@ class STRING(Token):
 
 @dataclass
 class NUMBER(Token):
-    pass
+    value: float
 
 
 # Keywords
@@ -171,7 +176,17 @@ class RETURN(Token):
 
 
 @dataclass
+class STAR(Token):
+    pass
+
+
+@dataclass
 class SUPER(Token):
+    pass
+
+
+@dataclass
+class THIS(Token):
     pass
 
 

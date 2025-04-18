@@ -263,12 +263,12 @@ class CharReader:
         this function consumes it and returns true. Otherwise, it returns false and does not consume
         anything.
 
-        If has_next() would return False, the function raises StopIteration.
+        If has_next() would return False, eat() returns False().
         """
         if len(c) != 1:
             raise ValueError(f"eat() requires exactly one character. Found: {c}")
         if not self.has_next():
-            raise StopIteration
+            return False
 
         if self.peek() == c:
             self.next()

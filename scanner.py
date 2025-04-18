@@ -1,4 +1,44 @@
-from tokens import Token, LPAREN, RPAREN, IDENT, EQUAL, STRING
+from tokens import (
+    Token,
+    LPAREN,
+    RPAREN,
+    LBRACE,
+    RBRACE,
+    COMMA,
+    DOT,
+    MINUS,
+    PLUS,
+    SEMICOLON,
+    SLASH,
+    STAR,
+    BANG,
+    BANG_EQUAL,
+    EQUAL,
+    EQUAL_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    IDENT,
+    STRING,
+    NUMBER,
+    AND,
+    CLASS,
+    ELSE,
+    FALSE,
+    FUN,
+    FOR,
+    IF,
+    NIL,
+    OR,
+    PRINT,
+    RETURN,
+    SUPER,
+    THIS,
+    TRUE,
+    VAR,
+    WHILE,
+)
 from charreader import CharReader
 
 
@@ -8,8 +48,12 @@ class ScannerError(Exception):
         self.message = message
 
 
-def _is_ident_char(c: str):
+def _is_ident_start_char(c: str):
     return c.isalpha() or c == "_"
+
+
+def _is_ident_cont_char(c: str):
+    return c.isalnum() or c == "_"
 
 
 class Scanner:
@@ -42,26 +86,146 @@ class Scanner:
 
         return STRING("".join(chars))
 
-    def _scan_ident(self):
+    def _scan_number(self):
+        """
+        Scans a number, which can be 1234 or 12.34, but not 12. or .34.
+        """
+        digits = []
+        # First everything before a potential decimal point.
+        while self.char_reader.has_next() and self.char_reader.peek().isdigit():
+            digits.append(self.char_reader.next())
+
+        # Check for decimal point followed by more digits.
+        if (
+            not self.char_reader.has_next()
+            or not self.char_reader.can_peek(1)
+            or self.char_reader.peek(0) != "."
+            or not self.char_reader.peek(1).isdigit()
+        ):
+            # The condition for a decimal part are not present, so we exit early.
+            return NUMBER(float("".join(digits)))
+
+        # Process the decimal part, which we now know is there.
+        digits.append(self.char_reader.next())  # This is the decimal point.
+        while self.char_reader.has_next() and self.char_reader.peek().isdigit():
+            digits.append(self.char_reader.next())
+
+        return NUMBER(float("".join(digits)))
+
+    def _scan_ident_or_keyword(self):
         """
         Scans an identifier token from the char reader and returns it.
         If there is a scanning error, a ScannerError is returned instead.
         """
-        chars = []
+        chars = [self.char_reader.next()]
         while True:
             if not self.char_reader.has_next():
                 # It is valid for the last token to be an identifier, with nothing following.
                 break
-            if not _is_ident_char(self.char_reader.peek()):
+            if not _is_ident_cont_char(self.char_reader.peek()):
                 # Something else is following
                 break
             chars.append(self.char_reader.next())
-        return IDENT("".join(chars))
+
+        ident = "".join(chars)
+
+        # Identify reserved words as keywords. If it's not a keyword, then it's
+        # an identifier.
+        if ident == "and":
+            return AND()
+        elif ident == "class":
+            return CLASS()
+        elif ident == "else":
+            return ELSE()
+        elif ident == "false":
+            return FALSE()
+        elif ident == "fun":
+            return FUN()
+        elif ident == "for":
+            return FOR()
+        elif ident == "if":
+            return IF()
+        elif ident == "nil":
+            return NIL()
+        elif ident == "or":
+            return OR()
+        elif ident == "print":
+            return PRINT()
+        elif ident == "return":
+            return RETURN()
+        elif ident == "super":
+            return SUPER()
+        elif ident == "this":
+            return THIS()
+        elif ident == "true":
+            return TRUE()
+        elif ident == "var":
+            return VAR()
+        elif ident == "while":
+            return WHILE()
+        else:
+            return IDENT(ident)
+
+    def _scan_token(self) -> Token | ScannerError:
+        """
+        For better ergonomics, core token scanning functionality is encapsulated
+        in this function, which returns the tokens rather than assigning it to
+        some instance variable.
+        """
+        c = self.char_reader
+        if c.eat("("):
+            return LPAREN()
+        elif c.eat(")"):
+            return RPAREN()
+        elif c.eat("{"):
+            return LBRACE()
+        elif c.eat("}"):
+            return RBRACE()
+        elif c.eat(","):
+            return COMMA()
+        elif c.eat("."):
+            return DOT()
+        elif c.eat("-"):
+            return MINUS()
+        elif c.eat("+"):
+            return PLUS()
+        elif c.eat(";"):
+            return SEMICOLON()
+        elif c.eat("/"):
+            return SLASH()
+        elif c.eat("*"):
+            return STAR()
+
+        # One or two character token
+        elif c.eat("="):
+            return EQUAL_EQUAL() if c.eat("=") else EQUAL()
+        elif c.eat("!"):
+            return BANG_EQUAL() if c.eat("=") else BANG()
+        elif c.eat("<"):
+            return LESS_EQUAL() if c.eat("=") else LESS()
+        elif c.eat(">"):
+            return GREATER_EQUAL() if c.eat("=") else GREATER()
+
+        # Literals and keywords
+        elif c.peek() == '"':
+            return self._scan_string()
+        elif c.peek().isdigit():
+            return self._scan_number()
+        elif _is_ident_start_char(c.peek()):
+            return self._scan_ident_or_keyword()
+        else:
+            return ScannerError(
+                "\n".join(
+                    ["Invalid token character:", self.char_reader.diagnostic_string()]
+                )
+            )
 
     def _load_next_token(self):
         """
         Scans the next token from the input and assigns it to _next_token. If
         there is an error, the error is assigned instead.
+
+        This is where the main logic is.
         """
         # Eat any whitespace, detecting the end of the input.
         while True:
@@ -78,25 +242,13 @@ class Scanner:
             # Found non-whitespace, process actual token.
             break
 
-        c = self.char_reader.peek()
-        if c == "(":
-            self.char_reader.next()
-            self._next_token = LPAREN()
-        elif c == ")":
-            self.char_reader.next()
-            self._next_token = RPAREN()
-        elif c == '"':
-            self._next_token = self._scan_string()
-        elif _is_ident_char(c):
-            self._next_token = self._scan_ident()
-        else:
-            self._next_token = ScannerError(
-                "\n".join(
-                    ["Invalid token character:", self.char_reader.diagnostic_string()]
-                )
-            )
+        self._next_token = self._scan_token()
 
     def next(self):
+        """
+        Returns the next scanned token, or an error if no token could be scanned.
+        Raises StopIteration if the end of the input has already been reached.
+        """
         match self._next_token:
             case ScannerError():
                 raise self._next_token
