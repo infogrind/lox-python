@@ -1,4 +1,25 @@
+from dataclasses import dataclass
 from typing import Iterator
+
+
+@dataclass
+class _DiagnosticState:
+    """
+    Represents the information to diagnose problems related to a specific read
+    character: At which line and column it was found, and a string with the
+    actual line.
+
+    The invariant is that this is in sync with the head char, except in these
+    cases:
+    - If the end of input has been reached, head_char will be None, but the
+      diagnostic state will still be that of the previous character.
+    - If there was never any input (we started out with an empty input), then
+      the diagnostic state is None.
+    """
+
+    col_no: int  # The column at which the character was located.
+    line_no: int  # Dito for the line.
+    line: str  # The actual line of input.
 
 
 class CharReader:
@@ -9,19 +30,25 @@ class CharReader:
 
     def __init__(self, line_iter: Iterator[str]):
         self._line_iter = line_iter
-        self._line_no = 0  # Value if input has no lines
 
-        # Keep the processed line in a separate variable. This always
-        # corresponds to the line number in _line_no. If we encounter the end
-        # of input, self._head_line will be None, but self._processed_line
-        # should still contain the last processed line. This will be used to
-        # still display a line for, say, "unexpected end of input" errors.
-        self._processed_line = ""
-        self._char_no = 0
-        self._load_line()
-        self._load_char()
+        # Variables to support the diagnostic state. These always correspond to
+        # the last position actually read from the file. Because CharReader
+        # does buffering, the diagnostic state of buffered characters are kept
+        # in a separate _DiagnosticState object for each buffered character.
+        #
+        # The invariant is that these variables always match the information of
+        # the last character read from the input, except if no character could
+        # ever be read (e.g. if the input was empty), in which case they keep
+        # their initial values assigned here.
+        self._last_processed_line = None
+        self._last_read_line_no = 0  # Value if input has no lines
+        self._last_read_char_no = 0
 
-    def _load_line(self):
+        # Initialize the state: load the first line and the first character.
+        self._advance_line()
+        self._advance_char()
+
+    def _advance_line(self):
         """
         Loads the next line from the input iterator into head_line and resets
         the char_iter. If the input iterator has no more elements, head_line is
@@ -29,11 +56,23 @@ class CharReader:
         """
         while True:
             try:
+                # _head_line is the last line read from the input, or None if
+                # the end of lines has been reached. Then each successive
+                # character is read from this variable until the end, when the
+                # next line is loaded.
                 self._head_line = next(self._line_iter)
-                self._line_no = self._line_no + 1
-                self._processed_line = self._head_line.rstrip()
+
+                # Note that empty lines are not handled in any special way. If
+                # the line read was empty, then the next call to _advance_char
+                # will just trigger _advance_line again.
+
+                # Reset the iterator that iterates through individual characters.
                 self._char_iter = iter(self._head_line)
-                self._char_no = 0
+
+                # Update the diagnostic information.
+                self._last_read_line_no = self._last_read_line_no + 1
+                self._last_read_char_no = 0
+                self._last_processed_line = self._head_line.rstrip()
             except StopIteration:
                 # End of lines reached
                 self._head_line = None
@@ -43,7 +82,7 @@ class CharReader:
                 break
             # Continue to skip empty lines.
 
-    def _load_char(self):
+    def _advance_char(self):
         """
         Loads the next character from the current line into head_char, to make
         it accessible by peek(). If there are no more characters, head_char is
@@ -55,29 +94,54 @@ class CharReader:
             return
         try:
             self._head_char = next(self._char_iter)
-            self._char_no = self._char_no + 1
+            self._last_read_char_no = self._last_read_char_no + 1
+
+            # Just to placate the linter and fail explicitly. But since _head_line is not None, it
+            # means that _last_processed_line has been set.
+            if self._last_processed_line is None:
+                raise RuntimeError(
+                    "Internal error: expected _last_processed_line to not be None."
+                )
+
+            # Update read state
+            self._head_state = _DiagnosticState(
+                self._last_read_char_no,
+                self._last_read_line_no,
+                self._last_processed_line,
+            )
         except StopIteration:
             # First see if there is another line to read.
-            self._load_line()
+            self._advance_line()
             if self._head_line is None:
                 # We have reached the end of characters and lines.
                 self._head_char = None
+
+                # We lead _head_state untouched because we want to keep the
+                # diagnostic information of the previously read character. This
+                # allows us to show things like "unexpected end of input at
+                # ...".
             else:
                 try:
                     self._head_char = next(self._char_iter)
-                    self._char_no = self._char_no = 1
+                    self._last_read_char_no = self._last_read_char_no = 1
+                    self._head_state = _DiagnosticState(
+                        self._last_read_char_no,
+                        self._last_read_line_no,
+                        self._last_processed_line,
+                    )
+
                 except StopIteration:
                     # We must have read an empty line. That is a bug, because load_line should skip
                     # empty lines.
                     raise RuntimeError("Illegal state detected, probably a bug.")
 
-    def line_no(self):
+    def line_no(self) -> int:
         """
         Returns the number of the last processed line.
         """
-        return self._line_no
+        return 0 if self._head_state is None else self._head_state.line_no
 
-    def char_no(self):
+    def char_no(self) -> int:
         """
         Returns the number of the last processed character in the current line,
         or 0 if no character has been processed (e.g. if the current line is an
@@ -86,20 +150,20 @@ class CharReader:
         "Processed" means it has actually been read from the input and is
         available to next() or peek().
         """
-        return self._char_no
+        return 0 if self._head_state is None else self._head_state.col_no
 
-    def diagnostic_string(self):
+    def diagnostic_string(self) -> str:
         """
         Returns a string that shows the last processed line and visually
         depicts the last processed position. Useful for error messages.
         """
-        if not self._processed_line:
+        if self._head_state is None:
             return "  (can't determine position, maybe there was no input at all)"
 
         # The entire diagnostic message is indented by two spaces.
-        line_prefix = f"{self._line_no:>5}: "
-        output = [line_prefix + self._processed_line]
-        arrow_indent = " " * len(line_prefix) + " " * (self._char_no - 1)
+        line_prefix = f"{self._last_read_line_no:>5}: "
+        output = [line_prefix + self._last_processed_line]
+        arrow_indent = " " * len(line_prefix) + " " * (self._last_read_char_no - 1)
         output.append(arrow_indent + "^")
         output.append(arrow_indent + "┗--- here")
         return "\n".join(output)
@@ -113,7 +177,7 @@ class CharReader:
             raise StopIteration
 
         result = self._head_char
-        self._load_char()
+        self._advance_char()
         return result
 
     def has_next(self) -> bool:
