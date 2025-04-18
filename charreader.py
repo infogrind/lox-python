@@ -64,13 +64,14 @@ class CharReader:
 
         # Initialize the state: load the first line and the first character.
         self._advance_line()
-        self._advance_char()
 
     def _advance_line(self):
         """
-        Loads the next line from the input iterator into head_line and resets
-        the char_iter. If the input iterator has no more elements, head_line is
-        set to None.
+        Loads the next non-empty line from the input iterator into head_line, resets
+        the _char_iter, and loads a new character into _head_char.
+
+        If the input iterator has no more elements, head_line and head_char are
+        set to none.
         """
         while True:
             try:
@@ -91,66 +92,40 @@ class CharReader:
                 self._last_processed_state.increase_line()
                 self._last_processed_state.col_no = 0
                 self._last_processed_state.line = self._head_line.rstrip()
+
             except StopIteration:
                 # End of lines reached
                 self._head_line = None
+                self._head_char = None
                 return
             if self._head_line != "":
                 # Found next non-empty line.
+                self._head_char = next(self._char_iter)
+                self._last_processed_state.increase_col()
+                self._head_state = replace(self._last_processed_state)
                 break
             # Continue to skip empty lines.
 
     def _advance_char(self):
         """
         Loads the next character from the current line into head_char, to make
-        it accessible by peek(). If there are no more characters, head_char is
+        it accessible by peek(). Advances to the next line if needed. If there
+        are no more characters, head_char is
         set to none.
         """
         if self._head_line is None:
-            # No more lines in line iterator, therefore also no more characters.
-            self._head_char = None
+            # Nothing to do. This operation is idempotent.
             return
         try:
             self._head_char = next(self._char_iter)
-            self._last_processed_state.increase_col()
-
-            # Just to placate the linter and fail explicitly. But since _head_line is not None, it
-            # means that _last_processed_line has been set.
-            if self._last_processed_state.line is None:
-                raise RuntimeError(
-                    "Internal error: expected _last_processed_line to not be None."
-                )
-
-            # Update read state
-            self._head_state = replace(self._last_processed_state)
+            # End of current line, need to advance.
         except StopIteration:
-            # First see if there is another line to read.
             self._advance_line()
-            if self._head_line is None:
-                # We have reached the end of characters and lines.
-                self._head_char = None
+            return
 
-                # We lead _head_state untouched because we want to keep the
-                # diagnostic information of the previously read character. This
-                # allows us to show things like "unexpected end of input at
-                # ...".
-            else:
-                try:
-                    self._head_char = next(self._char_iter)
-                    self._last_processed_state.increase_col()
-
-                    # Placate the linter
-                    if self._last_processed_state.line is None:
-                        raise RuntimeError(
-                            "Internal error: expected _last_processed_line to not be None."
-                        )
-
-                    self._head_state = replace(self._last_processed_state)
-
-                except StopIteration:
-                    # We must have read an empty line. That is a bug, because load_line should skip
-                    # empty lines.
-                    raise RuntimeError("Illegal state detected, probably a bug.")
+        # We've successfully read a character from the current line, so we can update the state.
+        self._last_processed_state.increase_col()
+        self._head_state = replace(self._last_processed_state)
 
     def line_no(self) -> int:
         """
