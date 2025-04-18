@@ -21,6 +21,26 @@ class _DiagnosticState:
     line_no: int  # Dito for the line.
     line: str | None  # The actual line of input.
 
+    def has_state(self) -> bool:
+        return self.line is not None
+
+    def increase_line(self) -> None:
+        self.line_no = self.line_no + 1
+
+    def increase_col(self) -> None:
+        self.col_no = self.col_no + 1
+
+    def diagnostic_string(self) -> str:
+        if self.line is None:
+            raise RuntimeError("No diagnostics for uninitialized state.")
+
+        line_prefix = f"{self.line_no:>5}: "
+        output = [line_prefix + self.line]
+        arrow_indent = " " * len(line_prefix) + " " * (self.col_no - 1)
+        output.append(arrow_indent + "^")
+        output.append(arrow_indent + "┗--- here")
+        return "\n".join(output)
+
 
 class CharReader:
     """
@@ -68,9 +88,7 @@ class CharReader:
                 self._char_iter = iter(self._head_line)
 
                 # Update the diagnostic information.
-                self._last_processed_state.line_no = (
-                    self._last_processed_state.line_no + 1
-                )
+                self._last_processed_state.increase_line()
                 self._last_processed_state.col_no = 0
                 self._last_processed_state.line = self._head_line.rstrip()
             except StopIteration:
@@ -94,7 +112,7 @@ class CharReader:
             return
         try:
             self._head_char = next(self._char_iter)
-            self._last_processed_state.col_no = self._last_processed_state.col_no + 1
+            self._last_processed_state.increase_col()
 
             # Just to placate the linter and fail explicitly. But since _head_line is not None, it
             # means that _last_processed_line has been set.
@@ -119,9 +137,7 @@ class CharReader:
             else:
                 try:
                     self._head_char = next(self._char_iter)
-                    self._last_processed_state.col_no = (
-                        self._last_processed_state.col_no + 1
-                    )
+                    self._last_processed_state.increase_col()
 
                     # Placate the linter
                     if self._last_processed_state.line is None:
@@ -158,16 +174,11 @@ class CharReader:
         Returns a string that shows the last processed line and visually
         depicts the last processed position. Useful for error messages.
         """
-        if self._head_state.line is None:
+        if not self._head_state.has_state():
             return "  (can't determine position, maybe there was no input at all)"
 
         # The entire diagnostic message is indented by two spaces.
-        line_prefix = f"{self._head_state.line_no:>5}: "
-        output = [line_prefix + self._head_state.line]
-        arrow_indent = " " * len(line_prefix) + " " * (self._head_state.col_no - 1)
-        output.append(arrow_indent + "^")
-        output.append(arrow_indent + "┗--- here")
-        return "\n".join(output)
+        return self._head_state.diagnostic_string()
 
     def next(self) -> str:
         """
