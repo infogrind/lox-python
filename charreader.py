@@ -1,4 +1,6 @@
+from collections import deque
 from dataclasses import dataclass, replace
+from typing import Deque
 from typing import Iterator
 
 
@@ -9,7 +11,7 @@ class _DiagnosticState:
     character: At which line and column it was found, and a string with the
     actual line.
 
-    The invariant is that this is in sync with the head char, except in these
+    The invariant is that this is in sync with the buffer, except in these
     cases:
     - If the end of input has been reached, head_char will be None, but the
       diagnostic state will still be that of the previous character.
@@ -42,14 +44,28 @@ class _DiagnosticState:
         return "\n".join(output)
 
 
+@dataclass
+class _ReadCharState:
+    """
+    Represents a read character with its diagnostic state. This is stored in
+    the char reader's buffer.
+    """
+
+    char: str
+    diags: _DiagnosticState
+
+
 class CharReader:
     """
     A reader to read characters from successive lines. Offers a peek()
     functionality for lookahead.
     """
 
+    _BUFFER_SIZE = 1
+
     def __init__(self, line_iter: Iterator[str]):
         self._line_iter = line_iter
+        self._buffer: Deque[_ReadCharState] = deque()
 
         # Variables to support the diagnostic state. These always correspond to
         # the last position actually read from the file. Because CharReader
@@ -64,7 +80,7 @@ class CharReader:
 
         # Initialize the state: load the first line and the first character.
         self._advance_line()
-        self._advance_char()
+        self._refill_buffer()
 
     def _advance_line(self):
         """
@@ -102,17 +118,18 @@ class CharReader:
                 break
             # Continue to skip empty lines.
 
-    def _advance_char(self) -> None:
+    def _refill_buffer(self) -> None:
         """
-        Loads the next character from the current line into head_char, to make
-        it accessible by peek(). Advances to the next line if needed. If there
-        are no more characters, head_char is set to none.
+        Loads characters from the input until the buffer is again at _BUFFER_SIZE
+        or until the end of the input has been reached.
         """
+        if len(self._buffer) >= CharReader._BUFFER_SIZE:
+            # Nothing to do.
+            return
         if self._head_line is None:
-            self._head_char = None
             return
         try:
-            self._head_char = next(self._char_iter)
+            read_char = next(self._char_iter)
             # End of current line, need to advance.
         except StopIteration:
             self._advance_line()
@@ -120,17 +137,27 @@ class CharReader:
             # _advance_line either sets the current line to a non-empty one and points the
             # char_iter at the start of it, or sets the line to None. In either case, we can call _advance_char
             # recursively, because we know we won't make another recursive call.
-            return self._advance_char()
+            return self._refill_buffer()
 
         # We've successfully read a character from the current line, so we can update the state.
         self._last_processed_state.increase_col()
-        self._head_state = replace(self._last_processed_state)
+        self._buffer.append(
+            _ReadCharState(read_char, replace(self._last_processed_state))
+        )
+
+        # Recursively iterate until the buffer is full.
+        return self._refill_buffer()
 
     def line_no(self) -> int:
         """
         Returns the number of the last processed line.
         """
-        return 0 if self._head_state is None else self._head_state.line_no
+        if self._buffer:
+            return self._buffer[0].diags.line_no
+        elif self._last_processed_state.has_state():
+            return self._last_processed_state.line_no
+        else:
+            return 0
 
     def char_no(self) -> int:
         """
@@ -141,7 +168,12 @@ class CharReader:
         "Processed" means it has actually been read from the input and is
         available to next() or peek().
         """
-        return 0 if self._head_state is None else self._head_state.col_no
+        if self._buffer:
+            return self._buffer[0].diags.col_no
+        elif self._last_processed_state.has_state():
+            return self._last_processed_state.col_no
+        else:
+            return 0
 
     def diagnostic_string(self) -> str:
         """
@@ -154,29 +186,33 @@ class CharReader:
 
         Note that once a character is returned by next(), the diagnostic information is lost.
         """
-        if not self._head_state.has_state():
+        if self._buffer:
+            return self._buffer[0].diags.diagnostic_string()
+        elif self._last_processed_state.has_state():
+            return self._last_processed_state.diagnostic_string()
+        else:
             return "  (can't determine position, maybe there was no input at all)"
-
-        # The entire diagnostic message is indented by two spaces.
-        return self._head_state.diagnostic_string()
 
     def next(self) -> str:
         """
         Returns the next character and advances to the next character.
         Raises StopIteration if there are no more characters.
         """
-        if self._head_char is None:
+        if not self._buffer:
+            # Empty buffer, nothing to return.
             raise StopIteration
 
-        result = self._head_char
-        self._advance_char()
+        result = self._buffer.pop().char
+
+        # Always keep the buffer full.
+        self._refill_buffer()
         return result
 
     def has_next(self) -> bool:
         """
         Returns True if there is still a character to read, false otherwise.
         """
-        return self._head_char is not None
+        return bool(self._buffer)
 
     def peek(self) -> str:
         """
@@ -184,6 +220,6 @@ class CharReader:
         without advancing. Raises StopIteration if there is no more character
         to read.
         """
-        if self._head_char is None:
+        if not self._buffer:
             raise StopIteration
-        return self._head_char
+        return self._buffer[0].char
