@@ -137,6 +137,19 @@ class ScannerTest(unittest.TestCase):
             "and aND class claSS", AND(), IDENT("aND"), CLASS(), IDENT("claSS")
         )
 
+    def test_crazy_token_combinations(self):
+        self.assertTokens(
+            "234.-classseven_!class.seven",
+            NUMBER(234.0),
+            DOT(),
+            MINUS(),
+            IDENT("classseven_"),
+            BANG(),
+            CLASS(),
+            DOT(),
+            IDENT("seven"),
+        )
+
     def test_scan_tokens_whitespace(self):
         scanner = Scanner(
             CharReader(iter(['   \t  \n \n (     var ("hund")  \t\n\n\t )   ']))
