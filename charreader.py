@@ -1,6 +1,7 @@
 from collections import deque
 from dataclasses import dataclass, replace
 from typing import Deque
+from typing import Generator
 from typing import Iterator
 
 
@@ -52,6 +53,20 @@ class _ReadCharState:
     diags: _DiagnosticState
 
 
+def _char_generator(line_iter: Iterator[str]) -> Generator[_ReadCharState, None, None]:
+    """
+    Returns a generator that produces successive characters from an iterator
+    of lines. The lines may or may not contain trailing newlines; if they do,
+    the newlines are returned like any other character.
+
+    The returned characters are encapsulated together with diagnostic state
+    in a _ReadCharState object.
+    """
+    for i, line in enumerate(line_iter):
+        for j, char in enumerate(line):
+            yield _ReadCharState(char, _DiagnosticState(j + 1, i + 1, line.rstrip()))
+
+
 class CharReader:
     """
     A reader to read characters from successive lines. Offers a peek()
@@ -82,8 +97,10 @@ class CharReader:
         # Class state and invariants
         ########################################################################
 
-        # Stores the provided iterator, used to fetch new lines from the input.
-        self._line_iter: Iterator[str] = line_iter
+        # The generator to provide new characters from the input.
+        self._char_generator: Generator[_ReadCharState, None, None] = _char_generator(
+            line_iter
+        )
 
         # The provided buffer size, immutable.
         self._bufsize = bufsize
@@ -102,41 +119,8 @@ class CharReader:
         # input was empty.
         self._last_processed_state: _DiagnosticState | None = None
 
-        # Initialize the state: load the first line and replenish the buffer.
-        self._advance_line()
+        # Make the buffer ready for reading.
         self._refill_buffer()
-
-    def _advance_line(self):
-        """
-        Loads the next non-empty line from the input iterator and resets
-        the _char_iter to consume it. After this is called, one of two
-        situations arise:
-        - char_iter is None, which means the end of the input has been reached,
-          or
-        - char_iter is not None, in which case we can continue to read
-          characters.
-        """
-        while True:
-            try:
-                line = next(self._line_iter)
-
-                # Update the diagnostic information.
-                if not self._last_processed_state:
-                    self._last_processed_state = _DiagnosticState(0, 0, "")
-                self._last_processed_state.update_line(line)
-
-                if not line:
-                    # Skip over empty lines.
-                    continue
-
-                # Reset the iterator that iterates through individual characters.
-                self._char_iter = iter(line)
-                break
-
-            except StopIteration:
-                # End of lines reached
-                self._char_iter = None
-                return
 
     def _refill_buffer(self) -> None:
         """
@@ -144,28 +128,13 @@ class CharReader:
         or until the end of the input has been reached.
         """
         while len(self._buffer) < self._bufsize:
-            if not self._char_iter:
-                # Already at end of input.
-                return
             try:
-                char = next(self._char_iter)
+                next_read_state = next(self._char_generator)
+                self._last_processed_state = next_read_state.diags
+                self._buffer.append(next_read_state)
             except StopIteration:
-                # End of current line, need to advance.
-                self._advance_line()
-
-                # Continue with the next character.
-                continue
-
-            # At this point, we've successfully read the next character.
-
-            # The state should always be set when a character could successfully be read.
-            assert self._last_processed_state, "State unexpectedly missing."
-
-            # We've successfully read a character from the current line, so we can update the state.
-            self._last_processed_state.increase_col()
-            self._buffer.append(
-                _ReadCharState(char, replace(self._last_processed_state))
-            )
+                # No more characters to put into the buffer, so we just stop.
+                return
 
     def line_no(self) -> int:
         """
