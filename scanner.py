@@ -166,13 +166,32 @@ class Scanner:
         else:
             return IDENT(ident)
 
+    def _eat_comment(self) -> None:
+        c = self.char_reader
+        assert c.eat("/")
+        assert c.eat("/")
+        while c.has_next():
+            # The comment ends with a new line character (or with end of input).
+            if c.eat("\n"):
+                return
+
+            # Eat any other comment charater.
+            c.next()
+
+        # If we're at the end, we need to clear the next token.
+        self._next_token = None
+
     def _scan_token(self) -> Token | ScannerError:
         """
         For better ergonomics, core token scanning functionality is encapsulated
         in this function, which returns the tokens rather than assigning it to
         some instance variable.
         """
+
+        # Just an alias for better ergonomics.
         c = self.char_reader
+
+        # Single character tokens
         if c.eat("("):
             return LPAREN()
         elif c.eat(")"):
@@ -227,18 +246,31 @@ class Scanner:
 
         This is where the main logic is.
         """
+        c = self.char_reader
         # Eat any whitespace, detecting the end of the input.
         while True:
-            if not self.char_reader.has_next():
+            if not c.has_next():
                 self._next_token = None
                 # TODO: Decide if we really want to use None or rather StopIteration.
                 #
                 # End of input reached.
                 return
-            if self.char_reader.peek().isspace():
+            if c.peek().isspace():
                 # Eat the whitespace
-                self.char_reader.next()
+                c.next()
                 continue
+
+            # Check for comments and skip them.
+            if c.can_peek(1) and c.peek(0) == "/" and c.peek(1) == "/":
+                self._eat_comment()
+
+                # There could again be whitespace or a comment afterwards.
+                continue
+
+            # Don't try to process more if the comment was at the end of the
+            # input.
+            if not c.has_next():
+                return
             # Found non-whitespace, process actual token.
             break
 

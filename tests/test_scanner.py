@@ -150,6 +150,20 @@ class ScannerTest(unittest.TestCase):
             IDENT("seven"),
         )
 
+    def test_single_comment(self):
+        self.assertTokens("//asdf")
+
+    def test_comments(self):
+        self.assertTokens(
+            "asd // Hello\n// gut *\nvar a = 3;//Test comment ✌️",
+            IDENT("asd"),
+            VAR(),
+            IDENT("a"),
+            EQUAL(),
+            NUMBER(3.0),
+            SEMICOLON(),
+        )
+
     def test_scan_tokens_whitespace(self):
         scanner = Scanner(
             CharReader(iter(['   \t  \n \n (     var ("hund")  \t\n\n\t )   ']))
