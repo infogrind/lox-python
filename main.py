@@ -1,6 +1,8 @@
 from typing import Generator
-from scanner import Scanner, ScannerError
+from token_generator import token_generator, ScannerError
+from tokens import Token
 from charreader import CharReader
+from buffered_iterator import BufferedIterator
 import sys
 
 
@@ -10,13 +12,15 @@ def lazy_readlines(filename: str) -> Generator[str, None, None]:
             yield str(line)
 
 
-def print_tokens(scanner: Scanner) -> None:
+def print_tokens(scanner: BufferedIterator[Token]) -> None:
     while scanner.has_next():
         print(f"Token: {scanner.next()}")
 
 
 def scan_file(filename: str) -> None:
-    print_tokens(Scanner(CharReader(lazy_readlines(filename))))
+    print_tokens(
+        BufferedIterator[Token](token_generator(CharReader(lazy_readlines(filename))))
+    )
 
 
 def scan_input() -> None:
@@ -24,7 +28,9 @@ def scan_input() -> None:
     while True:
         try:
             line = input("> ")
-            print_tokens(Scanner(CharReader(iter([line]))))
+            print_tokens(
+                BufferedIterator[Token](token_generator((CharReader(iter([line])))))
+            )
         except EOFError:
             break
         except ScannerError as e:
