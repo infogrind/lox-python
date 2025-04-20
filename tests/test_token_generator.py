@@ -40,18 +40,17 @@ from tokens import (
     VAR,
     WHILE,
 )
-from scanner import Scanner, ScannerError
+from token_generator import token_generator, ScannerError
 from charreader import CharReader
 from typing import List
 
 
-class ScannerTest(unittest.TestCase):
+class TokenGeneratorTest(unittest.TestCase):
     def assertTokens(self, s: str, *rest):
         expected: List[Token] = list(rest)
         actual: List[Token] = []
-        scanner = Scanner(CharReader(iter([s]), 2))
-        while scanner.has_next():
-            actual.append(scanner.next())
+        for token in token_generator(CharReader(iter([s]), 2)):
+            actual.append(token)
 
         self.assertEqual(actual, expected)
 
@@ -165,32 +164,24 @@ class ScannerTest(unittest.TestCase):
         )
 
     def test_scan_tokens_whitespace(self):
-        scanner = Scanner(
-            CharReader(iter(['   \t  \n \n (     var ("hund")  \t\n\n\t )   ']))
+        self.assertTokens(
+            '   \t  \n \n (     var ("hund")  \t\n\n\t )   ',
+            LPAREN(),
+            VAR(),
+            LPAREN(),
+            STRING("hund"),
+            RPAREN(),
+            RPAREN(),
         )
-        self.assertEqual(scanner.peek(), LPAREN())
-        self.assertEqual(scanner.next(), LPAREN())
-        self.assertEqual(scanner.peek(), VAR())
-        self.assertEqual(scanner.next(), VAR())
-        self.assertEqual(scanner.peek(), LPAREN())
-        self.assertEqual(scanner.next(), LPAREN())
-        self.assertEqual(scanner.peek(), STRING("hund"))
-        self.assertEqual(scanner.next(), STRING("hund"))
-        self.assertEqual(scanner.peek(), RPAREN())
-        self.assertEqual(scanner.peek(), RPAREN())
-        self.assertEqual(scanner.next(), RPAREN())
-        self.assertEqual(scanner.next(), RPAREN())
-
-        self.assertFalse(scanner.has_next())
 
     def test_unterminated_string(self):
-        scanner = Scanner(CharReader(iter(['(var ("hund))'])))
-        self.assertEqual(scanner.next(), LPAREN())
-        self.assertEqual(scanner.next(), VAR())
-        self.assertEqual(scanner.next(), LPAREN())
+        generator = token_generator(CharReader(iter(['(var ("hund))'])))
+        self.assertEqual(next(generator), LPAREN())
+        self.assertEqual(next(generator), VAR())
+        self.assertEqual(next(generator), LPAREN())
 
         with self.assertRaises(ScannerError) as context:
-            scanner.next()
+            next(generator)
         self.assertEqual(
             str(context.exception),
             """\
@@ -202,11 +193,11 @@ Unexpected end of string:
         )
 
     def test_illegal_token(self):
-        scanner = Scanner(CharReader(iter(["(var ¥)"])))
-        scanner.next()
-        scanner.next()
+        generator = token_generator(CharReader(iter(["(var ¥)"])))
+        next(generator)
+        next(generator)
         with self.assertRaises(ScannerError) as context:
-            scanner.next()
+            next(generator)
         self.assertEqual(
             str(context.exception),
             """\
@@ -217,11 +208,11 @@ Invalid token character:
         )
 
     def test_illegal_token_emoji(self):
-        scanner = Scanner(CharReader(iter(["(var 😂)"])))
-        scanner.next()
-        scanner.next()
+        generator = token_generator(CharReader(iter(["(var 😂)"])))
+        next(generator)
+        next(generator)
         with self.assertRaises(ScannerError) as context:
-            scanner.next()
+            next(generator)
         self.assertEqual(
             str(context.exception),
             """\
@@ -232,11 +223,11 @@ Invalid token character:
         )
 
     def test_error_position_whitespace(self):
-        scanner = Scanner(CharReader(iter(["(   var   ¥§)"])))
-        scanner.next()
-        scanner.next()
+        generator = token_generator(CharReader(iter(["(   var   ¥§)"])))
+        next(generator)
+        next(generator)
         with self.assertRaises(ScannerError) as context:
-            scanner.next()
+            next(generator)
         self.assertEqual(
             str(context.exception),
             """\
@@ -247,11 +238,11 @@ Invalid token character:
         )
 
     def test_error_position_multiline(self):
-        scanner = Scanner(CharReader(iter(["(var  \n", "   ¥§)\n"])))
-        scanner.next()
-        scanner.next()
+        generator = token_generator(CharReader(iter(["(var  \n", "   ¥§)\n"])))
+        next(generator)
+        next(generator)
         with self.assertRaises(ScannerError) as context:
-            scanner.next()
+            next(generator)
         self.assertEqual(
             str(context.exception),
             """\
