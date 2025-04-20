@@ -49,7 +49,7 @@ class TokenGeneratorTest(unittest.TestCase):
     def assertTokens(self, s: str, *rest):
         expected: List[Token] = list(rest)
         actual: List[Token] = []
-        for token in token_generator(CharReader(iter([s]), 2)):
+        for token in token_generator(CharReader(iter([s]))):
             actual.append(token)
 
         self.assertEqual(actual, expected)

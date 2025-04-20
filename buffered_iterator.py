@@ -4,10 +4,20 @@ from typing import Deque
 
 
 class BufferedIterator[T]:
-    def __init__(self, iter: Iterator[T], bufsize: int):
+    """
+    Wraps an arbitrary iterator and loads the elements at the front in a buffer
+    of size bufsize. This allows peeking at the bufsize first elements, which is
+    not possible with a normal iterator.
+
+    If calling next() on the underlying iterator raises an exception, that exception
+    is only raised to the user of BufferedIterator when the corresponding element
+    would be returned from the buffer, either by next(), peek(), or eat().
+    """
+
+    def __init__(self, iter: Iterator[T], bufsize: int = 1):
         self._iter = iter
         self._bufsize = bufsize
-        self._buffer: Deque[T] = deque()
+        self._buffer: Deque[T | Exception] = deque()
 
         self._refill_buffer()
 
@@ -20,7 +30,12 @@ class BufferedIterator[T]:
             try:
                 self._buffer.append(next(self._iter))
             except StopIteration:
+                # End of input
                 return
+            except Exception as e:
+                # Exceptions are added to the buffer, to be thrown in
+                # next() or peek().
+                self._buffer.append(e)
 
     def has_next(self) -> bool:
         """
@@ -29,7 +44,7 @@ class BufferedIterator[T]:
         """
         return bool(self._buffer)
 
-    def next(self):
+    def next(self) -> T:
         """
         Returns the next element. Raises StopIteration if no more elements are available.
         """
@@ -38,7 +53,12 @@ class BufferedIterator[T]:
 
         result = self._buffer.popleft()
         self._refill_buffer()
-        return result
+
+        match result:
+            case Exception():
+                raise result
+            case x:
+                return x
 
     def can_peek(self, pos: int = 0) -> bool:
         """
@@ -51,7 +71,7 @@ class BufferedIterator[T]:
             raise ValueError(f"Invalid position: {pos}.")
         if pos >= self._bufsize:
             raise ValueError(
-                f"In valid position: {pos}. It must be less than the buffer size {self._bufsize}."
+                f"Invalid position: {pos}. It must be less than the buffer size {self._bufsize}."
             )
         return pos < len(self._buffer)
 
@@ -70,7 +90,13 @@ class BufferedIterator[T]:
             )
         if pos >= len(self._buffer):
             raise StopIteration
-        return self._buffer[pos]
+
+        result = self._buffer[pos]
+        match result:
+            case Exception():
+                raise result
+            case x:
+                return x
 
     def eat(self, val: T) -> bool:
         """
