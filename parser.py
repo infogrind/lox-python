@@ -1,4 +1,4 @@
-from buffered_iterator import BufferedIterator
+from buffered_scanner import BufferedScanner
 from tokens import (
     Token,
     LPAREN,
@@ -64,7 +64,7 @@ from syntax import (
 )
 
 
-def _parse_primary(tokens: BufferedIterator[Token]) -> Expression:
+def _parse_primary(tokens: BufferedScanner) -> Expression:
     t = tokens.next()
     match t:
         case NUMBER(value):
@@ -86,7 +86,7 @@ def _parse_primary(tokens: BufferedIterator[Token]) -> Expression:
             raise RuntimeError(f"Unexpected token {t} file parsing primary.")
 
 
-def _parse_term(tokens: BufferedIterator[Token]) -> Expression:
+def _parse_term(tokens: BufferedScanner) -> Expression:
     expr = _parse_primary(tokens)
     while tokens.has_next():
         if tokens.eat(PLUS()):
@@ -99,7 +99,7 @@ def _parse_term(tokens: BufferedIterator[Token]) -> Expression:
     return expr
 
 
-def _parse_comparison(tokens: BufferedIterator[Token]) -> Expression:
+def _parse_comparison(tokens: BufferedScanner) -> Expression:
     # TODO: Parse intermediary levels
     expr = _parse_term(tokens)
     while tokens.has_next():
@@ -117,7 +117,7 @@ def _parse_comparison(tokens: BufferedIterator[Token]) -> Expression:
     return expr
 
 
-def _parse_equality(tokens: BufferedIterator[Token]) -> Expression:
+def _parse_equality(tokens: BufferedScanner) -> Expression:
     expr = _parse_comparison(tokens)
     while tokens.has_next():
         if tokens.eat(EQUAL_EQUAL()):
@@ -143,11 +143,11 @@ def _parse_equality(tokens: BufferedIterator[Token]) -> Expression:
 #                  | "(" Expression ")"
 
 
-def _parse_expression(tokens: BufferedIterator[Token]) -> Expression:
+def _parse_expression(tokens: BufferedScanner) -> Expression:
     return _parse_equality(tokens)
 
 
-def parse_node(tokens: BufferedIterator[Token]) -> Node:
+def parse_node(tokens: BufferedScanner) -> Node:
     # Currently only a single expression is supported.
     expr = _parse_expression(tokens)
     if tokens.has_next():

@@ -41,6 +41,7 @@ from tokens import (
 )
 from charreader import CharReader
 from typing import Generator
+from token_with_context import TokenWithContext
 
 
 class ScannerError(Exception):
@@ -251,7 +252,7 @@ def _scan_token(c: CharReader) -> Token:
         )
 
 
-def token_generator(char_reader: CharReader) -> Generator[Token, None, None]:
+def token_generator(char_reader: CharReader) -> Generator[TokenWithContext, None, None]:
     """
     Returns a generator that produces tokens scanned from the input.
 
@@ -267,4 +268,6 @@ def token_generator(char_reader: CharReader) -> Generator[Token, None, None]:
             break
 
         # Scan next actual token.
-        yield _scan_token(char_reader)
+        diag_str = char_reader.diagnostic_string()
+        token = _scan_token(char_reader)
+        yield TokenWithContext(token, diag_str)

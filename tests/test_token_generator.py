@@ -43,14 +43,15 @@ from tokens import (
 from token_generator import token_generator, ScannerError
 from charreader import CharReader
 from typing import List
+from token_with_context import TokenWithContext
 
 
 class TokenGeneratorTest(unittest.TestCase):
     def assertTokens(self, s: str, *rest):
         expected: List[Token] = list(rest)
         actual: List[Token] = []
-        for token in token_generator(CharReader(iter([s]))):
-            actual.append(token)
+        for twc in token_generator(CharReader(iter([s]))):
+            actual.append(twc.t)
 
         self.assertEqual(actual, expected)
 
@@ -176,9 +177,9 @@ class TokenGeneratorTest(unittest.TestCase):
 
     def test_unterminated_string(self):
         generator = token_generator(CharReader(iter(['(var ("hund))'])))
-        self.assertEqual(next(generator), LPAREN())
-        self.assertEqual(next(generator), VAR())
-        self.assertEqual(next(generator), LPAREN())
+        self.assertEqual(next(generator).t, LPAREN())
+        self.assertEqual(next(generator).t, VAR())
+        self.assertEqual(next(generator).t, LPAREN())
 
         with self.assertRaises(ScannerError) as context:
             next(generator)

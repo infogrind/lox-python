@@ -4,13 +4,18 @@ from ast_printer import print_node
 from token_generator import token_generator
 from charreader import CharReader
 from buffered_iterator import BufferedIterator
+from buffered_scanner import BufferedScanner
 
 
 class TestParser(unittest.TestCase):
     def assertParses(self, s: str, r: str) -> None:
         self.assertEqual(
             print_node(
-                parse_node(BufferedIterator(token_generator(CharReader(iter([s]))), 2))
+                parse_node(
+                    BufferedScanner(
+                        BufferedIterator(token_generator(CharReader(iter([s]))), 2)
+                    )
+                )
             ),
             r,
         )
