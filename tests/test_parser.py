@@ -1,6 +1,6 @@
 import unittest
-from parser import parse_expression
-from ast_printer import print_expression
+from parser import parse_node
+from ast_printer import print_node
 from token_generator import token_generator
 from charreader import CharReader
 from buffered_iterator import BufferedIterator
@@ -9,10 +9,8 @@ from buffered_iterator import BufferedIterator
 class TestParser(unittest.TestCase):
     def assertParses(self, s: str, r: str) -> None:
         self.assertEqual(
-            print_expression(
-                parse_expression(
-                    BufferedIterator(token_generator(CharReader(iter([s]))), 2)
-                )
+            print_node(
+                parse_node(BufferedIterator(token_generator(CharReader(iter([s]))), 2))
             ),
             r,
         )
@@ -62,8 +60,14 @@ class TestParser(unittest.TestCase):
         self.assertParses("true != false > true", "( != true ( > false true ) )")
         self.assertParses("true != false <= true", "( != true ( <= false true ) )")
 
-    def test_complex_grouping(self):
+    def test_comparison_equality_grouping(self):
         self.assertParses(
             "((true < false) == (false >= true)) > ((false != true) != (true))",
             "( > ( == ( < true false ) ( >= false true ) ) ( != ( != false true ) true ) )",
         )
+
+    def test_addition(self):
+        self.assertParses("2 + 3", "( + 2.0 3.0 )")
+
+    def test_subtraction(self):
+        self.assertParses("2 - 3", "( - 2.0 3.0 )")

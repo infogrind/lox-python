@@ -78,7 +78,7 @@ def _parse_primary(tokens: BufferedIterator[Token]) -> Expression:
         case NIL():
             return Nil()
         case LPAREN():
-            expr = parse_expression(tokens)
+            expr = _parse_expression(tokens)
             if not tokens.eat(RPAREN()):
                 raise RuntimeError("Missing closing parenthesis.")
             return expr
@@ -86,18 +86,31 @@ def _parse_primary(tokens: BufferedIterator[Token]) -> Expression:
             raise RuntimeError(f"Unexpected token {t} file parsing primary.")
 
 
-def _parse_comparison(tokens: BufferedIterator[Token]) -> Expression:
-    # TODO: Parse intermediary levels
+def _parse_term(tokens: BufferedIterator[Token]) -> Expression:
     expr = _parse_primary(tokens)
     while tokens.has_next():
+        if tokens.eat(PLUS()):
+            expr = Add(expr, _parse_primary(tokens))
+        elif tokens.eat(MINUS()):
+            expr = Subtract(expr, _parse_primary(tokens))
+        else:
+            break
+
+    return expr
+
+
+def _parse_comparison(tokens: BufferedIterator[Token]) -> Expression:
+    # TODO: Parse intermediary levels
+    expr = _parse_term(tokens)
+    while tokens.has_next():
         if tokens.eat(LESS()):
-            expr = LessThanExpr(expr, _parse_primary(tokens))
+            expr = LessThanExpr(expr, _parse_term(tokens))
         elif tokens.eat(LESS_EQUAL()):
-            expr = LessEqualExpr(expr, _parse_primary(tokens))
+            expr = LessEqualExpr(expr, _parse_term(tokens))
         elif tokens.eat(GREATER()):
-            expr = GreaterThanExpr(expr, _parse_primary(tokens))
+            expr = GreaterThanExpr(expr, _parse_term(tokens))
         elif tokens.eat(GREATER_EQUAL()):
-            expr = GreaterEqualExpr(expr, _parse_primary(tokens))
+            expr = GreaterEqualExpr(expr, _parse_term(tokens))
         else:
             break
 
@@ -130,5 +143,13 @@ def _parse_equality(tokens: BufferedIterator[Token]) -> Expression:
 #                  | "(" Expression ")"
 
 
-def parse_expression(tokens: BufferedIterator[Token]) -> Expression:
+def _parse_expression(tokens: BufferedIterator[Token]) -> Expression:
     return _parse_equality(tokens)
+
+
+def parse_node(tokens: BufferedIterator[Token]) -> Node:
+    # Currently only a single expression is supported.
+    expr = _parse_expression(tokens)
+    if tokens.has_next():
+        raise RuntimeError(f"Unexpected token after expression: {tokens.peek()}")
+    return expr

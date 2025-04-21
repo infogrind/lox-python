@@ -23,10 +23,10 @@ from syntax import (
 
 
 def _print_binary_expression(op: str, lhs: Expression, rhs: Expression) -> str:
-    return f"( {op} {print_expression(lhs)} {print_expression(rhs)} )"
+    return f"( {op} {_print_expression(lhs)} {_print_expression(rhs)} )"
 
 
-def print_expression(e: Expression) -> str:
+def _print_expression(e: Expression) -> str:
     match e:
         case Number(value):
             return str(value)
@@ -50,5 +50,17 @@ def print_expression(e: Expression) -> str:
             return _print_binary_expression(">", lhs, rhs)
         case GreaterEqualExpr(lhs, rhs):
             return _print_binary_expression(">=", lhs, rhs)
+        case Add(lhs, rhs):
+            return _print_binary_expression("+", lhs, rhs)
+        case Subtract(lhs, rhs):
+            return _print_binary_expression("-", lhs, rhs)
         case _:
             raise RuntimeError(f"Unknown expression: {e}")
+
+
+def print_node(n: Node) -> str:
+    match n:
+        case Expression():
+            return _print_expression(n)
+        case _:
+            raise RuntimeError(f"Unexpected node type: {n}")
