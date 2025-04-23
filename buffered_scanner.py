@@ -11,6 +11,8 @@ class BufferedScanner:
         return self._bit.has_next()
 
     def next(self) -> Token:
+        if not self.has_next():
+            raise StopIteration
         self._latest_diag = self._bit.peek().d
         return self._bit.next().t
 
@@ -22,6 +24,7 @@ class BufferedScanner:
 
     def eat(self, t: Token) -> bool:
         if self._bit.has_next() and self._bit.peek().t == t:
+            self._latest_diag = self._bit.peek().d
             self._bit.next()
             return True
 

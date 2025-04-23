@@ -64,7 +64,16 @@ from syntax import (
 )
 
 
+class ParserError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
 def _parse_primary(tokens: BufferedScanner) -> Expression:
+    diag = tokens.diagnostics()
+    if not tokens.has_next():
+        raise ParserError("Unexpected end of expression:\n" + diag)
     t = tokens.next()
     match t:
         case NUMBER(value):
@@ -80,19 +89,39 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
         case LPAREN():
             expr = _parse_expression(tokens)
             if not tokens.eat(RPAREN()):
-                raise RuntimeError("Missing closing parenthesis.")
+                raise ParserError(
+                    "Missing closing parenthesis:\n"
+                    + tokens.diagnostics()
+                    + "\nStarting parenthesis:\n"
+                    + diag
+                )
             return expr
+        case PLUS() | SLASH() | STAR():
+            raise ParserError("Illegal start of expression:\n" + diag)
         case _:
-            raise RuntimeError(f"Unexpected token {t} file parsing primary.")
+            raise ParserError(f"Unexpected token {t} while parsing primary:\n" + diag)
+
+
+def _parse_factor(tokens: BufferedScanner) -> Expression:
+    expr = _parse_primary(tokens)
+    while tokens.has_next():
+        if tokens.eat(STAR()):
+            expr = Mult(expr, _parse_primary(tokens))
+        elif tokens.eat(SLASH()):
+            expr = Div(expr, _parse_primary(tokens))
+        else:
+            break
+
+    return expr
 
 
 def _parse_term(tokens: BufferedScanner) -> Expression:
-    expr = _parse_primary(tokens)
+    expr = _parse_factor(tokens)
     while tokens.has_next():
         if tokens.eat(PLUS()):
-            expr = Add(expr, _parse_primary(tokens))
+            expr = Add(expr, _parse_factor(tokens))
         elif tokens.eat(MINUS()):
-            expr = Subtract(expr, _parse_primary(tokens))
+            expr = Subtract(expr, _parse_factor(tokens))
         else:
             break
 
@@ -138,6 +167,7 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 # Term          -> Factor ( ( "+" | "-") Factor )*
 # Factor        -> Unary ( ( "*" | "/" ) Unary )*
 # Unary         -> ( "-" | "!" ) Primary
+#                  | "+" Expression -> error production
 #                  | Primary
 # Primary       -> NUMBER | STRING | TRUE | FALSE | NIL
 #                  | "(" Expression ")"

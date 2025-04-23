@@ -54,6 +54,10 @@ def _print_expression(e: Expression) -> str:
             return _print_binary_expression("+", lhs, rhs)
         case Subtract(lhs, rhs):
             return _print_binary_expression("-", lhs, rhs)
+        case Mult(lhs, rhs):
+            return _print_binary_expression("*", lhs, rhs)
+        case Div(lhs, rhs):
+            return _print_binary_expression("/", lhs, rhs)
         case _:
             raise RuntimeError(f"Unknown expression: {e}")
 
