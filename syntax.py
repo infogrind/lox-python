@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 
+@dataclass
 class Program:
-    def __init__(self, expr: "Expression | None" = None):
-        self.expr: "Expression | None" = expr
+    expr: "Expression | None"
 
 
 class Expression:

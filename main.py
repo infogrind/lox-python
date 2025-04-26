@@ -1,11 +1,12 @@
 from typing import Generator
 from token_generator import token_generator, ScannerError
-from tokens import Token
 from charreader import CharReader
 from buffered_iterator import BufferedIterator
 from buffered_scanner import BufferedScanner
-from parser import parse_node, ParserError
-from ast_printer import print_node
+from parser import parse_program, ParserError
+from syntax import Program
+from expression_evaluator import evaluate_expression, TypeError
+from typing import Iterator
 import sys
 
 
@@ -15,18 +16,27 @@ def lazy_readlines(filename: str) -> Generator[str, None, None]:
             yield str(line)
 
 
-def scan_file(filename: str) -> None:
-    print(
-        print_node(
-            parse_node(
-                BufferedScanner(
-                    BufferedIterator(
-                        token_generator(CharReader(lazy_readlines(filename)))
-                    )
-                )
-            )
+def _evaluate_lines(lines: Iterator[str]) -> None:
+    try:
+        p: Program = parse_program(
+            BufferedScanner(BufferedIterator(token_generator(CharReader(lines))))
         )
-    )
+        if not p.expr:
+            print("empty program")
+            return
+        print(evaluate_expression(p.expr))
+    except ScannerError as e:
+        print(f"{e}")
+    except ParserError as e:
+        print(f"{e}")
+    except TypeError as e:
+        print(f"{e}")
+    except ZeroDivisionError:
+        print("Division by zero")
+
+
+def scan_file(filename: str) -> None:
+    _evaluate_lines(lazy_readlines(filename))
 
 
 def scan_input() -> None:
@@ -34,21 +44,9 @@ def scan_input() -> None:
     while True:
         try:
             line = input("> ")
-            print(
-                print_node(
-                    parse_node(
-                        BufferedScanner(
-                            BufferedIterator(
-                                token_generator((CharReader(iter([line]))))
-                            )
-                        )
-                    )
-                )
-            )
+            _evaluate_lines(iter([line]))
         except EOFError:
             break
-        except ParserError as e:
-            print(f"{e}")
 
 
 def main() -> None:

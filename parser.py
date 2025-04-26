@@ -194,7 +194,7 @@ def parse_program(tokens: BufferedScanner) -> Program:
     # Currently only a single expression is supported.
     if tokens.eat(EOF()):
         # No expression (empty program)
-        return Program()
+        return Program(None)
 
     expr = _parse_expression(tokens)
     if not tokens.eat(EOF()):
