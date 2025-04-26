@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 
 
-class Node:
-    pass
+class Program:
+    def __init__(self, expr: "Expression | None" = None):
+        self.expr: "Expression | None" = expr
 
 
-class Expression(Node):
+class Expression:
     pass
 
 

@@ -1,15 +1,15 @@
 import unittest
-from parser import parse_node, ParserError
-from ast_printer import print_node
+from parser import parse_program, ParserError
+from ast_printer import print_program
 from token_generator import token_generator
 from charreader import CharReader
 from buffered_iterator import BufferedIterator
 from buffered_scanner import BufferedScanner
-from syntax import Node
+from syntax import Program
 
 
-def parse_string(s: str) -> Node:
-    return parse_node(
+def parse_string(s: str) -> Program:
+    return parse_program(
         BufferedScanner(BufferedIterator(token_generator(CharReader(iter([s])))))
     )
 
@@ -17,8 +17,8 @@ def parse_string(s: str) -> Node:
 class TestParser(unittest.TestCase):
     def assertParses(self, s: str, r: str) -> None:
         self.assertEqual(
-            print_node(
-                parse_node(
+            print_program(
+                parse_program(
                     BufferedScanner(
                         BufferedIterator(token_generator(CharReader(iter([s]))), 2)
                     )
@@ -26,6 +26,9 @@ class TestParser(unittest.TestCase):
             ),
             r,
         )
+
+    def test_empty_program(self):
+        self.assertParses("", "")
 
     def test_true_literal(self):
         self.assertParses("true", "true")
@@ -124,10 +127,22 @@ Illegal start of expression:
             """\
 Missing closing parenthesis:
     1: 1 + (2 * (3 - 9)
-                      ^
-                      ┗--- here
+                       ^
+                       ┗--- here
 Starting parenthesis:
     1: 1 + (2 * (3 - 9)
            ^
            ┗--- here""",
+        )
+
+    def test_invalid_multiple_expressions(self):
+        with self.assertRaises(ParserError) as context:
+            parse_string("(1 + 3) (4 + 5)")
+        self.assertEqual(
+            str(context.exception),
+            """\
+Unexpected token; expected end-of-file:
+    1: (1 + 3) (4 + 5)
+               ^
+               ┗--- here""",
         )

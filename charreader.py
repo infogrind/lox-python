@@ -67,7 +67,7 @@ class CharReader:
         if self._buffer.has_next():
             return self._buffer.peek(0).diags.diagnostic_string()
         elif self._last_processed_state:
-            return self._last_processed_state.diagnostic_string()
+            return self._last_processed_state.next_col().diagnostic_string()
         else:
             return "  (can't determine position, maybe there was no input at all)"
 

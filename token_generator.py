@@ -38,6 +38,7 @@ from tokens import (
     TRUE,
     VAR,
     WHILE,
+    EOF,
 )
 from charreader import CharReader
 from typing import Generator
@@ -271,3 +272,5 @@ def token_generator(char_reader: CharReader) -> Generator[TokenWithContext, None
         diag_str = char_reader.diagnostic_string()
         token = _scan_token(char_reader)
         yield TokenWithContext(token, diag_str)
+
+    yield TokenWithContext(EOF(), char_reader.diagnostic_string())

@@ -39,11 +39,11 @@ from tokens import (
     TRUE,
     VAR,
     WHILE,
+    EOF,
 )
 from token_generator import token_generator, ScannerError
 from charreader import CharReader
 from typing import List
-from token_with_context import TokenWithContext
 
 
 class TokenGeneratorTest(unittest.TestCase):
@@ -56,31 +56,33 @@ class TokenGeneratorTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_skip_whitespace(self):
-        self.assertTokens("(  \n )\n\n)", LPAREN(), RPAREN(), RPAREN())
+        self.assertTokens("(  \n )\n\n)", LPAREN(), RPAREN(), RPAREN(), EOF())
 
     def test_single_character_tokens(self):
-        self.assertTokens("()", LPAREN(), RPAREN())
-        self.assertTokens("{}", LBRACE(), RBRACE())
-        self.assertTokens(".,*", DOT(), COMMA(), STAR())
-        self.assertTokens("-+", MINUS(), PLUS())
-        self.assertTokens(";/*", SEMICOLON(), SLASH(), STAR())
+        self.assertTokens("()", LPAREN(), RPAREN(), EOF())
+        self.assertTokens("{}", LBRACE(), RBRACE(), EOF())
+        self.assertTokens(".,*", DOT(), COMMA(), STAR(), EOF())
+        self.assertTokens("-+", MINUS(), PLUS(), EOF())
+        self.assertTokens(";/*", SEMICOLON(), SLASH(), STAR(), EOF())
 
     def test_one_or_two_character_tokens(self):
-        self.assertTokens("= == == =", EQUAL(), EQUAL_EQUAL(), EQUAL_EQUAL(), EQUAL())
-        # Maximum munch rule: identify the longest fitting token.
-        self.assertTokens("====", EQUAL_EQUAL(), EQUAL_EQUAL())
-        self.assertTokens("===", EQUAL_EQUAL(), EQUAL())
-        self.assertTokens("! !=", BANG(), BANG_EQUAL())
-        self.assertTokens("!!!", BANG(), BANG(), BANG())
-        self.assertTokens("!!=", BANG(), BANG_EQUAL())
         self.assertTokens(
-            "!!!====", BANG(), BANG(), BANG_EQUAL(), EQUAL_EQUAL(), EQUAL()
+            "= == == =", EQUAL(), EQUAL_EQUAL(), EQUAL_EQUAL(), EQUAL(), EOF()
         )
-        self.assertTokens("<>", LESS(), GREATER())
-        self.assertTokens("<<>>", LESS(), LESS(), GREATER(), GREATER())
-        self.assertTokens("<=>=", LESS_EQUAL(), GREATER_EQUAL())
-        self.assertTokens("<====", LESS_EQUAL(), EQUAL_EQUAL(), EQUAL())
-        self.assertTokens("<<=", LESS(), LESS_EQUAL())
+        # Maximum munch rule: identify the longest fitting token.
+        self.assertTokens("====", EQUAL_EQUAL(), EQUAL_EQUAL(), EOF())
+        self.assertTokens("===", EQUAL_EQUAL(), EQUAL(), EOF())
+        self.assertTokens("! !=", BANG(), BANG_EQUAL(), EOF())
+        self.assertTokens("!!!", BANG(), BANG(), BANG(), EOF())
+        self.assertTokens("!!=", BANG(), BANG_EQUAL(), EOF())
+        self.assertTokens(
+            "!!!====", BANG(), BANG(), BANG_EQUAL(), EQUAL_EQUAL(), EQUAL(), EOF()
+        )
+        self.assertTokens("<>", LESS(), GREATER(), EOF())
+        self.assertTokens("<<>>", LESS(), LESS(), GREATER(), GREATER(), EOF())
+        self.assertTokens("<=>=", LESS_EQUAL(), GREATER_EQUAL(), EOF())
+        self.assertTokens("<====", LESS_EQUAL(), EQUAL_EQUAL(), EQUAL(), EOF())
+        self.assertTokens("<<=", LESS(), LESS_EQUAL(), EOF())
 
     def test_strings(self):
         self.assertTokens(
@@ -90,13 +92,14 @@ class TokenGeneratorTest(unittest.TestCase):
             STRING("frank"),
             STRING(""),
             STRING(""),
+            EOF(),
         )
 
     def test_numbers(self):
-        self.assertTokens("12.34", NUMBER(12.34))
-        self.assertTokens("1234", NUMBER(1234))
-        self.assertTokens(".1234", DOT(), NUMBER(1234))
-        self.assertTokens("1234.abc", NUMBER(1234), DOT(), IDENT("abc"))
+        self.assertTokens("12.34", NUMBER(12.34), EOF())
+        self.assertTokens("1234", NUMBER(1234), EOF())
+        self.assertTokens(".1234", DOT(), NUMBER(1234), EOF())
+        self.assertTokens("1234.abc", NUMBER(1234), DOT(), IDENT("abc"), EOF())
 
     def test_identifiers(self):
         self.assertTokens(
@@ -106,6 +109,7 @@ class TokenGeneratorTest(unittest.TestCase):
             IDENT("baz"),
             IDENT("_hello"),
             IDENT("_sMugi13_3__31"),
+            EOF(),
         )
 
     def test_keywords(self):
@@ -120,6 +124,7 @@ class TokenGeneratorTest(unittest.TestCase):
             IF(),
             NIL(),
             OR(),
+            EOF(),
         )
         self.assertTokens(
             "print return super this true var while",
@@ -130,11 +135,12 @@ class TokenGeneratorTest(unittest.TestCase):
             TRUE(),
             VAR(),
             WHILE(),
+            EOF(),
         )
 
     def test_keywords_are_case_sensitive(self):
         self.assertTokens(
-            "and aND class claSS", AND(), IDENT("aND"), CLASS(), IDENT("claSS")
+            "and aND class claSS", AND(), IDENT("aND"), CLASS(), IDENT("claSS"), EOF()
         )
 
     def test_crazy_token_combinations(self):
@@ -148,10 +154,11 @@ class TokenGeneratorTest(unittest.TestCase):
             CLASS(),
             DOT(),
             IDENT("seven"),
+            EOF(),
         )
 
     def test_single_comment(self):
-        self.assertTokens("//asdf")
+        self.assertTokens("//asdf", EOF())
 
     def test_comments(self):
         self.assertTokens(
@@ -162,6 +169,7 @@ class TokenGeneratorTest(unittest.TestCase):
             EQUAL(),
             NUMBER(3.0),
             SEMICOLON(),
+            EOF(),
         )
 
     def test_scan_tokens_whitespace(self):
@@ -173,6 +181,7 @@ class TokenGeneratorTest(unittest.TestCase):
             STRING("hund"),
             RPAREN(),
             RPAREN(),
+            EOF(),
         )
 
     def test_unterminated_string(self):
@@ -188,8 +197,8 @@ class TokenGeneratorTest(unittest.TestCase):
             """\
 Unexpected end of string:
     1: (var ("hund))
-                   ^
-                   ┗--- here\
+                    ^
+                    ┗--- here\
 """,
         )
 

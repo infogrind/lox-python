@@ -203,3 +203,8 @@ class VAR(Token):
 @dataclass
 class WHILE(Token):
     pass
+
+
+@dataclass
+class EOF(Token):
+    pass

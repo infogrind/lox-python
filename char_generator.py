@@ -26,6 +26,15 @@ class Diagnostics:
         output.append(arrow_indent + "┗--- here")
         return "\n".join(output)
 
+    def next_col(self) -> "Diagnostics":
+        """
+        Returns a diagnostics object corresponding to one column advanced
+        from the current one. This is to have an object that points to the
+        column _after_ the last character, in case there were any missing
+        characters such as missing closing quote or closing parenthesis.
+        """
+        return Diagnostics(self._line_no, self._col_no + 1, self._line)
+
 
 @dataclass
 class ReadCharState:

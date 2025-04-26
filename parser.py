@@ -39,9 +39,10 @@ from tokens import (
     TRUE,
     VAR,
     WHILE,
+    EOF,
 )
 from syntax import (
-    Node,
+    Program,
     Expression,
     Number,
     String,
@@ -172,6 +173,7 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 
 # Syntax:
 #
+# Program       -> (Expression)?
 # Expression    -> Equality
 # Equality      -> Comparison ( ("==" | "!=") Comparison)*
 # Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
@@ -188,9 +190,15 @@ def _parse_expression(tokens: BufferedScanner) -> Expression:
     return _parse_equality(tokens)
 
 
-def parse_node(tokens: BufferedScanner) -> Node:
+def parse_program(tokens: BufferedScanner) -> Program:
     # Currently only a single expression is supported.
+    if tokens.eat(EOF()):
+        # No expression (empty program)
+        return Program()
+
     expr = _parse_expression(tokens)
-    if tokens.has_next():
-        raise RuntimeError(f"Unexpected token after expression: {tokens.peek()}")
-    return expr
+    if not tokens.eat(EOF()):
+        raise ParserError(
+            "Unexpected token; expected end-of-file:\n" + tokens.diagnostics()
+        )
+    return Program(expr)

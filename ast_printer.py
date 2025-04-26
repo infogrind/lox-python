@@ -1,11 +1,10 @@
 from syntax import (
-    Node,
+    Program,
     Expression,
     Number,
     String,
     Negative,
     LogicalNot,
-    Grouping,
     LessEqualExpr,
     LessThanExpr,
     GreaterEqualExpr,
@@ -66,9 +65,9 @@ def _print_expression(e: Expression) -> str:
             raise RuntimeError(f"Unknown expression: {e}")
 
 
-def print_node(n: Node) -> str:
-    match n:
-        case Expression():
-            return _print_expression(n)
-        case _:
-            raise RuntimeError(f"Unexpected node type: {n}")
+def print_program(p: Program) -> str:
+    if p.expr:
+        return _print_expression(p.expr)
+    else:
+        # Empty program
+        return ""

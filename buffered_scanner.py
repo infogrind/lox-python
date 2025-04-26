@@ -13,7 +13,6 @@ class BufferedScanner:
     def next(self) -> Token:
         if not self.has_next():
             raise StopIteration
-        self._latest_diag = self._bit.peek().d
         return self._bit.next().t
 
     def can_peek(self, offset: int = 0) -> bool:
@@ -24,7 +23,6 @@ class BufferedScanner:
 
     def eat(self, t: Token) -> bool:
         if self._bit.has_next() and self._bit.peek().t == t:
-            self._latest_diag = self._bit.peek().d
             self._bit.next()
             return True
 
@@ -34,4 +32,4 @@ class BufferedScanner:
         if self._bit.has_next():
             return self._bit.peek().d
         else:
-            return self._latest_diag
+            raise StopIteration("Cannot get diagnostics past last token.")
