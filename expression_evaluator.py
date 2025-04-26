@@ -1,23 +1,21 @@
 from syntax import (
-    Program,
+    Add,
+    Div,
+    EqualEqualExpr,
     Expression,
-    Number,
-    String,
-    Negative,
-    LogicalNot,
-    LessEqualExpr,
-    LessThanExpr,
+    FalseExpr,
     GreaterEqualExpr,
     GreaterThanExpr,
-    EqualEqualExpr,
-    NotEqualExpr,
-    Add,
-    Subtract,
+    LessEqualExpr,
+    LessThanExpr,
+    LogicalNot,
     Mult,
-    Div,
-    TrueExpr,
-    FalseExpr,
+    Negative,
     Nil,
+    NotEqualExpr,
+    Number,
+    Subtract,
+    TrueExpr,
 )
 
 
@@ -25,18 +23,6 @@ class TypeError(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
-
-
-def _assert_numbers(msg: str, *args) -> None:
-    for a in args:
-        if not isinstance(a, float):
-            raise TypeError(msg)
-
-
-def _assert_bool(msg: str, *args) -> None:
-    for a in args:
-        if not isinstance(a, bool):
-            raise TypeError(msg)
 
 
 def _evaluate_number(expr: Expression) -> float:

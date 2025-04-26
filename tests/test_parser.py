@@ -69,7 +69,7 @@ class TestParser(unittest.TestCase):
             "( > true ( != true ( == true false ) ) )",
         )
 
-    def test_precedence_without_parenteses(self):
+    def test_precedence_without_parentheses(self):
         self.assertParses(
             "1 + 2 * 3 - 4 / 5", "( - ( + 1.0 ( * 2.0 3.0 ) ) ( / 4.0 5.0 ) )"
         )
@@ -119,7 +119,7 @@ Illegal start of expression:
              ┗--- here""",
         )
 
-    def test_unclosed_parentesis(self):
+    def test_unclosed_parenthesis(self):
         with self.assertRaises(ParserError) as context:
             parse_string("1 + (2 * (3 - 9)")
         self.assertEqual(

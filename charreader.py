@@ -1,8 +1,7 @@
-from collections import deque
-from typing import Deque
 from typing import Iterator
-from char_generator import char_generator, ReadCharState, Diagnostics
+
 from buffered_iterator import BufferedIterator
+from char_generator import Diagnostics, ReadCharState, char_generator
 
 
 class CharReader:

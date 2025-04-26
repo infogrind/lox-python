@@ -1,4 +1,3 @@
-from collections.abc import Buffer
 import unittest
 from buffered_iterator import BufferedIterator
 
