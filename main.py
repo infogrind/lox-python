@@ -50,7 +50,6 @@ def scan_input() -> None:
 
 
 def main() -> None:
-    print(sys.argv)
     if len(sys.argv) > 2:
         print("Syntax error.")
 
