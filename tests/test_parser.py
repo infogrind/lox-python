@@ -89,6 +89,19 @@ class TestParser(unittest.TestCase):
     def test_subtraction(self):
         self.assertParses("2 - 3", "( - 2.0 3.0 )")
 
+    def test_unary_expressions(self):
+        self.assertParses("-2", "( - 2.0 )")
+        self.assertParses("!true", "( ! true )")
+        self.assertParses("1 + 2 * - 3", "( + 1.0 ( * 2.0 ( - 3.0 ) ) )")
+        self.assertParses(
+            "1 + 2 * - 7 + 5 - !(true > false)",
+            "( - ( + ( + 1.0 ( * 2.0 ( - 7.0 ) ) ) 5.0 ) ( ! ( > true false ) ) )",
+        )
+
+    def test_repeated_unary_expressions(self):
+        self.assertParses("!!true", "( ! ( ! true ) )")
+        self.assertParses("--2", "( - ( - 2.0 ) )")
+
     # Error cases
 
     def test_lonely_plus(self):

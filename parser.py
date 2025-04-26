@@ -102,13 +102,24 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
             raise ParserError(f"Unexpected token {t} while parsing primary:\n" + diag)
 
 
+def _parse_unary(tokens: BufferedScanner) -> Expression:
+    if tokens.eat(BANG()):
+        expr = LogicalNot(_parse_unary(tokens))
+    elif tokens.eat(MINUS()):
+        expr = Negative(_parse_unary(tokens))
+    else:
+        expr = _parse_primary(tokens)
+
+    return expr
+
+
 def _parse_factor(tokens: BufferedScanner) -> Expression:
-    expr = _parse_primary(tokens)
+    expr = _parse_unary(tokens)
     while tokens.has_next():
         if tokens.eat(STAR()):
-            expr = Mult(expr, _parse_primary(tokens))
+            expr = Mult(expr, _parse_unary(tokens))
         elif tokens.eat(SLASH()):
-            expr = Div(expr, _parse_primary(tokens))
+            expr = Div(expr, _parse_unary(tokens))
         else:
             break
 

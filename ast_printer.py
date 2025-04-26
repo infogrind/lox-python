@@ -58,6 +58,10 @@ def _print_expression(e: Expression) -> str:
             return _print_binary_expression("*", lhs, rhs)
         case Div(lhs, rhs):
             return _print_binary_expression("/", lhs, rhs)
+        case Negative(expr):
+            return f"( - {_print_expression(expr)} )"
+        case LogicalNot(expr):
+            return f"( ! {_print_expression(expr)} )"
         case _:
             raise RuntimeError(f"Unknown expression: {e}")
 
