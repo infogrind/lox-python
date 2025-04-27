@@ -7,6 +7,7 @@ from syntax import (
     FalseExpr,
     GreaterEqualExpr,
     GreaterThanExpr,
+    Grouping,
     LessEqualExpr,
     LessThanExpr,
     LogicalNot,
@@ -29,8 +30,6 @@ class TypeError(Exception):
 
 def _evaluate_number(expr: Expression) -> float:
     x = evaluate_expression(expr)
-    # FIXME: The diagnostics string will point to the token that defines the
-    # expression, but it should point to the first parenthesis.
     if not isinstance(x, float):
         raise TypeError("Expected: number", expr.diag)
     return x
@@ -54,6 +53,8 @@ def evaluate_expression(expr: Expression) -> float | bool | None:
             return False
         case Nil():
             return None
+        case Grouping(expr):
+            return evaluate_expression(expr)
         # Unary
         case Negative(expr):
             x = _evaluate_number(expr)

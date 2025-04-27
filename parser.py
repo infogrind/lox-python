@@ -8,6 +8,7 @@ from syntax import (
     FalseExpr,
     GreaterEqualExpr,
     GreaterThanExpr,
+    Grouping,
     LessEqualExpr,
     LessThanExpr,
     LogicalNot,
@@ -68,7 +69,7 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
         case NIL():
             return Nil(diag=diag)
         case LPAREN():
-            expr = _parse_expression(tokens)
+            expr = Grouping(_parse_expression(tokens), diag=diag)
             if not tokens.eat(RPAREN()):
                 raise ParserError("Missing closing parenthesis", tokens.diagnostics())
             return expr

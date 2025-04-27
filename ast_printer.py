@@ -1,23 +1,24 @@
 from syntax import (
-    Program,
+    Add,
+    Div,
+    EqualEqualExpr,
     Expression,
-    Number,
-    String,
-    Negative,
-    LogicalNot,
-    LessEqualExpr,
-    LessThanExpr,
+    FalseExpr,
     GreaterEqualExpr,
     GreaterThanExpr,
-    EqualEqualExpr,
-    NotEqualExpr,
-    Add,
-    Subtract,
+    Grouping,
+    LessEqualExpr,
+    LessThanExpr,
+    LogicalNot,
     Mult,
-    Div,
-    TrueExpr,
-    FalseExpr,
+    Negative,
     Nil,
+    NotEqualExpr,
+    Number,
+    Program,
+    String,
+    Subtract,
+    TrueExpr,
 )
 
 
@@ -37,6 +38,8 @@ def _print_expression(e: Expression) -> str:
             return "false"
         case Nil():
             return "nil"
+        case Grouping(expr):
+            return _print_expression(expr)
         case EqualEqualExpr(lhs, rhs):
             return _print_binary_expression("==", lhs, rhs)
         case NotEqualExpr(lhs, rhs):
