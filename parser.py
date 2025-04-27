@@ -119,7 +119,6 @@ def _parse_term(tokens: BufferedScanner) -> Expression:
 
 
 def _parse_comparison(tokens: BufferedScanner) -> Expression:
-    # TODO: Parse intermediary levels
     expr = _parse_term(tokens)
     while tokens.has_next():
         if tokens.eat(LESS()):
