@@ -1,6 +1,7 @@
 from buffered_iterator import BufferedIterator
-from tokens import Token
+from diagnostics import Diagnostics
 from token_with_context import TokenWithContext
+from tokens import Token
 
 
 class BufferedScanner:
@@ -28,7 +29,7 @@ class BufferedScanner:
 
         return False
 
-    def diagnostics(self) -> str:
+    def diagnostics(self) -> Diagnostics:
         if self._bit.has_next():
             return self._bit.peek().d
         else:

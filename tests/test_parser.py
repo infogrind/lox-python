@@ -6,6 +6,7 @@ from charreader import CharReader
 from buffered_iterator import BufferedIterator
 from buffered_scanner import BufferedScanner
 from syntax import Program
+from diagnostics import Pos
 
 
 def parse_string(s: str) -> Program:
@@ -110,39 +111,19 @@ class TestParser(unittest.TestCase):
     def test_lonely_plus(self):
         with self.assertRaises(ParserError) as context:
             parse_string("1 + ( + 2)")
-        self.assertEqual(
-            str(context.exception),
-            """\
-Illegal start of expression:
-    1: 1 + ( + 2)
-             ^
-             ┗--- here""",
-        )
+        self.assertEqual(context.exception.message, "Illegal start of expression")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 7))
 
     def test_unclosed_parenthesis(self):
         with self.assertRaises(ParserError) as context:
             parse_string("1 + (2 * (3 - 9)")
-        self.assertEqual(
-            str(context.exception),
-            """\
-Missing closing parenthesis:
-    1: 1 + (2 * (3 - 9)
-                       ^
-                       ┗--- here
-Starting parenthesis:
-    1: 1 + (2 * (3 - 9)
-           ^
-           ┗--- here""",
-        )
+        self.assertEqual(context.exception.message, "Missing closing parenthesis")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 17))
 
     def test_invalid_multiple_expressions(self):
         with self.assertRaises(ParserError) as context:
             parse_string("(1 + 3) (4 + 5)")
         self.assertEqual(
-            str(context.exception),
-            """\
-Unexpected token; expected end-of-file:
-    1: (1 + 3) (4 + 5)
-               ^
-               ┗--- here""",
+            context.exception.message, "Unexpected token; expected end-of-file"
         )
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 9))

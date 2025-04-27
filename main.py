@@ -26,11 +26,11 @@ def _evaluate_lines(lines: Iterator[str]) -> None:
             return
         print(evaluate_expression(p.expr))
     except ScannerError as e:
-        print(f"{e}")
+        print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
     except ParserError as e:
-        print(f"{e}")
+        print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
     except TypeError as e:
-        print(f"{e}")
+        print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
     except ZeroDivisionError:
         print("Division by zero")
 

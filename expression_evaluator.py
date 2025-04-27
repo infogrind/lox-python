@@ -1,3 +1,4 @@
+from diagnostics import Diagnostics
 from syntax import (
     Add,
     Div,
@@ -20,22 +21,25 @@ from syntax import (
 
 
 class TypeError(Exception):
-    def __init__(self, message):
+    def __init__(self, message: str, diag: Diagnostics):
         super().__init__(message)
-        self.message = message
+        self.message: str = message
+        self.diagnostics: Diagnostics = diag
 
 
 def _evaluate_number(expr: Expression) -> float:
     x = evaluate_expression(expr)
+    # FIXME: The diagnostics string will point to the token that defines the
+    # expression, but it should point to the first parenthesis.
     if not isinstance(x, float):
-        raise TypeError("Expected: number:\n" + expr.diag)
+        raise TypeError("Expected: number", expr.diag)
     return x
 
 
 def _evaluate_bool(expr: Expression) -> bool:
     x = evaluate_expression(expr)
     if not isinstance(x, bool):
-        raise TypeError("Expected: bool")
+        raise TypeError("Expected: bool", expr.diag)
     return x
 
 
@@ -97,15 +101,11 @@ def evaluate_expression(expr: Expression) -> float | bool | None:
             x = evaluate_expression(lhs)
             y = evaluate_expression(rhs)
             if type(x) is not type(y):
-                raise TypeError(
-                    f"Cannot compare {type(x)} and {type(y)}:\n" + expr.diag
-                )
+                raise TypeError(f"Cannot compare {type(x)} and {type(y)}", expr.diag)
             return x == y
         case NotEqualExpr(lhs, rhs):
             x = evaluate_expression(lhs)
             y = evaluate_expression(rhs)
             if type(x) is not type(y):
-                raise TypeError(
-                    f"Cannot compare {type(x)} and {type(y)}:\n" + expr.diag
-                )
+                raise TypeError(f"Cannot compare {type(x)} and {type(y)}", expr.diag)
             return x != y

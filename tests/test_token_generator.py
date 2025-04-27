@@ -44,6 +44,7 @@ from tokens import (
 from token_generator import token_generator, ScannerError
 from charreader import CharReader
 from typing import List
+from diagnostics import Pos
 
 
 class TokenGeneratorTest(unittest.TestCase):
@@ -192,15 +193,8 @@ class TokenGeneratorTest(unittest.TestCase):
 
         with self.assertRaises(ScannerError) as context:
             next(generator)
-        self.assertEqual(
-            str(context.exception),
-            """\
-Unexpected end of string:
-    1: (var ("hund))
-                    ^
-                    ┗--- here\
-""",
-        )
+        self.assertEqual(context.exception.message, "Unexpected end of string")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 14))
 
     def test_illegal_token(self):
         generator = token_generator(CharReader(iter(["(var ¥)"])))
@@ -208,14 +202,8 @@ Unexpected end of string:
         next(generator)
         with self.assertRaises(ScannerError) as context:
             next(generator)
-        self.assertEqual(
-            str(context.exception),
-            """\
-Invalid token character:
-    1: (var ¥)
-            ^
-            ┗--- here""",
-        )
+        self.assertEqual(context.exception.message, "Invalid token character")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 6))
 
     def test_illegal_token_emoji(self):
         generator = token_generator(CharReader(iter(["(var 😂)"])))
@@ -223,14 +211,8 @@ Invalid token character:
         next(generator)
         with self.assertRaises(ScannerError) as context:
             next(generator)
-        self.assertEqual(
-            str(context.exception),
-            """\
-Invalid token character:
-    1: (var 😂)
-            ^
-            ┗--- here""",
-        )
+        self.assertEqual(context.exception.message, "Invalid token character")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 6))
 
     def test_error_position_whitespace(self):
         generator = token_generator(CharReader(iter(["(   var   ¥§)"])))
@@ -238,14 +220,8 @@ Invalid token character:
         next(generator)
         with self.assertRaises(ScannerError) as context:
             next(generator)
-        self.assertEqual(
-            str(context.exception),
-            """\
-Invalid token character:
-    1: (   var   ¥§)
-                 ^
-                 ┗--- here""",
-        )
+        self.assertEqual(context.exception.message, "Invalid token character")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(1, 11))
 
     def test_error_position_multiline(self):
         generator = token_generator(CharReader(iter(["(var  \n", "   ¥§)\n"])))
@@ -253,11 +229,5 @@ Invalid token character:
         next(generator)
         with self.assertRaises(ScannerError) as context:
             next(generator)
-        self.assertEqual(
-            str(context.exception),
-            """\
-Invalid token character:
-    2:    ¥§)
-          ^
-          ┗--- here""",
-        )
+        self.assertEqual(context.exception.message, "Invalid token character")
+        self.assertEqual(context.exception.diagnostics.pos, Pos(2, 4))

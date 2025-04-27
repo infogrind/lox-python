@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from diagnostics import Diagnostics
 
 
 @dataclass
@@ -8,7 +9,7 @@ class Program:
 
 @dataclass
 class Expression:
-    diag: str = field(kw_only=True, default="")
+    diag: Diagnostics = field(kw_only=True)
 
 
 class LiteralExpression(Expression):

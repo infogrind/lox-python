@@ -1,7 +1,8 @@
 from typing import Iterator
 
 from buffered_iterator import BufferedIterator
-from char_generator import Diagnostics, ReadCharState, char_generator
+from diagnostics import Diagnostics, Pos
+from char_generator import ReadCharState, char_generator
 
 
 class CharReader:
@@ -47,7 +48,7 @@ class CharReader:
         # input was empty.
         self._last_processed_state: Diagnostics | None = None
 
-    def diagnostic_string(self) -> str:
+    def diagnostics(self) -> Diagnostics:
         """
         Returns a string that indentifies the next character (the character
         returned by peek() or next()), by printing the containing line and an
@@ -64,11 +65,11 @@ class CharReader:
         information is lost (unless it was the last character available).
         """
         if self._buffer.has_next():
-            return self._buffer.peek(0).diags.diagnostic_string()
+            return self._buffer.peek(0).diags
         elif self._last_processed_state:
-            return self._last_processed_state.next_col().diagnostic_string()
+            return self._last_processed_state.next_col()
         else:
-            return "  (can't determine position, maybe there was no input at all)"
+            return Diagnostics(Pos(0, 0), "(no input)")
 
     def next(self) -> str:
         """

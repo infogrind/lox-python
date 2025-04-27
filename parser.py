@@ -1,4 +1,5 @@
 from buffered_scanner import BufferedScanner
+from diagnostics import Diagnostics
 from syntax import (
     Add,
     Div,
@@ -44,15 +45,16 @@ from tokens import (
 
 
 class ParserError(Exception):
-    def __init__(self, message):
+    def __init__(self, message, diagnostics):
         super().__init__(message)
-        self.message = message
+        self.message: str = message
+        self.diagnostics: Diagnostics = diagnostics
 
 
 def _parse_primary(tokens: BufferedScanner) -> Expression:
     diag = tokens.diagnostics()
     if not tokens.has_next():
-        raise ParserError("Unexpected end of expression:\n" + diag)
+        raise ParserError("Unexpected end of expression", diag)
     t = tokens.next()
     match t:
         case NUMBER(value):
@@ -68,17 +70,12 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
         case LPAREN():
             expr = _parse_expression(tokens)
             if not tokens.eat(RPAREN()):
-                raise ParserError(
-                    "Missing closing parenthesis:\n"
-                    + tokens.diagnostics()
-                    + "\nStarting parenthesis:\n"
-                    + diag
-                )
+                raise ParserError("Missing closing parenthesis", tokens.diagnostics())
             return expr
         case PLUS() | SLASH() | STAR():
-            raise ParserError("Illegal start of expression:\n" + diag)
+            raise ParserError("Illegal start of expression", diag)
         case _:
-            raise ParserError(f"Unexpected token {t} while parsing primary:\n" + diag)
+            raise ParserError(f"Unexpected token {t} while parsing primary", diag)
 
 
 def _parse_unary(tokens: BufferedScanner) -> Expression:
@@ -181,6 +178,6 @@ def parse_program(tokens: BufferedScanner) -> Program:
     expr = _parse_expression(tokens)
     if not tokens.eat(EOF()):
         raise ParserError(
-            "Unexpected token; expected end-of-file:\n" + tokens.diagnostics()
+            "Unexpected token; expected end-of-file", tokens.diagnostics()
         )
     return Program(expr)

@@ -40,7 +40,7 @@ from tokens import (
     WHILE,
     EOF,
 )
-from charreader import CharReader
+from charreader import CharReader, Diagnostics
 from typing import Generator
 from token_with_context import TokenWithContext
 
@@ -50,9 +50,10 @@ class ScannerError(Exception):
     Custom exception to store a scanning error.
     """
 
-    def __init__(self, message):
+    def __init__(self, message: str, diagnostics: Diagnostics):
         super().__init__(message)
-        self.message = message
+        self.message: str = message
+        self.diagnostics: Diagnostics = diagnostics
 
 
 def _is_ident_start_char(c: str):
@@ -104,12 +105,8 @@ def _scan_string(c: CharReader) -> Token:
     while True:
         if not c.has_next():
             raise ScannerError(
-                "\n".join(
-                    [
-                        "Unexpected end of string:",
-                        c.diagnostic_string(),
-                    ]
-                )
+                "Unexpected end of string",
+                c.diagnostics(),
             )
         char = c.next()
         if char == '"':
@@ -248,9 +245,7 @@ def _scan_token(c: CharReader) -> Token:
     elif _is_ident_start_char(c.peek()):
         return _scan_ident_or_keyword(c)
     else:
-        raise ScannerError(
-            "\n".join(["Invalid token character:", c.diagnostic_string()])
-        )
+        raise ScannerError("Invalid token character", c.diagnostics())
 
 
 def token_generator(char_reader: CharReader) -> Generator[TokenWithContext, None, None]:
@@ -269,8 +264,8 @@ def token_generator(char_reader: CharReader) -> Generator[TokenWithContext, None
             break
 
         # Scan next actual token.
-        diag_str = char_reader.diagnostic_string()
+        diag_str = char_reader.diagnostics()
         token = _scan_token(char_reader)
         yield TokenWithContext(token, diag_str)
 
-    yield TokenWithContext(EOF(), char_reader.diagnostic_string())
+    yield TokenWithContext(EOF(), char_reader.diagnostics())

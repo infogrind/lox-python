@@ -1,5 +1,6 @@
 import unittest
 from charreader import CharReader
+from diagnostics import Pos
 
 
 class TestCharReader(unittest.TestCase):
@@ -101,53 +102,16 @@ class TestCharReader(unittest.TestCase):
         c = CharReader(iter([]))
         self.assertFalse(c.has_next())
 
-    def test_diagnostic_message(self):
+    def test_diagnostics(self):
         c = CharReader(iter(["a bc x"]))
-        self.assertEqual(
-            c.diagnostic_string(),
-            """\
-    1: a bc x
-       ^
-       ┗--- here\
-""",
-        )
+        self.assertEqual(c.diagnostics().pos, Pos(1, 1))
 
         c.next()
         c.next()
 
-        self.assertEqual(
-            c.diagnostic_string(),
-            """\
-    1: a bc x
-         ^
-         ┗--- here\
-""",
-        )
+        self.assertEqual(c.diagnostics().pos, Pos(1, 3))
 
-    def test_diagnostic_message_long_buffer(self):
-        c = CharReader(iter(["a bc x"]))
-        self.assertEqual(
-            c.diagnostic_string(),
-            """\
-    1: a bc x
-       ^
-       ┗--- here\
-""",
-        )
-
-        c.next()
-        c.next()
-
-        self.assertEqual(
-            c.diagnostic_string(),
-            """\
-    1: a bc x
-         ^
-         ┗--- here\
-""",
-        )
-
-    def test_diagnostic_message_newlines(self):
+    def test_diagnostics_newlines(self):
         c = CharReader(iter(["a\n", "  b\n"]))
 
         # Eat everything up to but excluding b (the newlines are read as
@@ -157,17 +121,12 @@ class TestCharReader(unittest.TestCase):
         c.next()
         c.next()
 
-        self.assertEqual(
-            c.diagnostic_string(),
-            """\
-    2:   b
-         ^
-         ┗--- here""",
-        )
+        self.assertEqual(c.diagnostics().pos, Pos(2, 3))
 
-    def test_diagnostic_message_col_remains_at_last_char(self):
-        # Note that 'b' is the last character. If we call next() again, the diagnostic
-        # message should still point at b.
+    def test_diagnostics_col_beyond_last_char(self):
+        # After reading the last character, the message should point one
+        # character beyond, even if there was no "real" character in the
+        # input.
         c = CharReader(iter(["a\n", "  b"]))
 
         # Eat everything up to and including b.
@@ -175,15 +134,10 @@ class TestCharReader(unittest.TestCase):
         c.next()
         c.next()
         c.next()
+        c.next()
 
         # The diagnistic message should still point at b.
-        self.assertEqual(
-            c.diagnostic_string(),
-            """\
-    2:   b
-         ^
-         ┗--- here""",
-        )
+        self.assertEqual(c.diagnostics().pos, Pos(2, 4))
 
     def test_longer_buffer_peek_and_next_single_line(self):
         c = CharReader(iter(["Hello\n"]))

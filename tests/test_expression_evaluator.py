@@ -6,6 +6,7 @@ from charreader import CharReader
 from parser import parse_program
 from buffered_iterator import BufferedIterator
 from syntax import Program
+from diagnostics import Pos
 
 
 def _parse_string(s: str) -> Program:
@@ -158,12 +159,29 @@ class ExpressionEvaluatorTest(unittest.TestCase):
         self.assertEvaluates("nil != nil", False)
 
     def test_not_equal_type_error(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as ctx:
             self._evaluate("3 != true")
-        with self.assertRaises(TypeError):
+        self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 3))
+
+        with self.assertRaises(TypeError) as ctx:
             self._evaluate("3 != nil")
-        with self.assertRaises(TypeError):
+        self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 3))
+
+        with self.assertRaises(TypeError) as ctx:
             self._evaluate("nil != true")
+        self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 5))
+
+    def test_error_position_in_complex_expressions(self):
+        with self.assertRaises(TypeError) as ctx:
+            # Comparison of incompatible types shoudl be at the == position.
+            self._evaluate("true == ((1 + 2) * 3)")
+        self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 6))
+
+        # FIXME: Enable this code once the issue has been fixed.
+        # with self.assertRaises(TypeError) as ctx:
+        #     # Expected type of operand should be at the first parenthesis.
+        #     self._evaluate("1 + ((true != false) == !false)")
+        # self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 5))
 
     def test_complex_expressions(self):
         self.assertEvaluates("4 + 7*8/ 93 > 4.60", True)
