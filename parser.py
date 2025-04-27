@@ -56,15 +56,15 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
     t = tokens.next()
     match t:
         case NUMBER(value):
-            return Number(value)
+            return Number(value, diag=diag)
         case STRING(value):
-            return String(value)
+            return String(value, diag=diag)
         case TRUE():
-            return TrueExpr()
+            return TrueExpr(diag=diag)
         case FALSE():
-            return FalseExpr()
+            return FalseExpr(diag=diag)
         case NIL():
-            return Nil()
+            return Nil(diag=diag)
         case LPAREN():
             expr = _parse_expression(tokens)
             if not tokens.eat(RPAREN()):
@@ -82,10 +82,11 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
 
 
 def _parse_unary(tokens: BufferedScanner) -> Expression:
+    diag = tokens.diagnostics()
     if tokens.eat(BANG()):
-        expr = LogicalNot(_parse_unary(tokens))
+        expr = LogicalNot(_parse_unary(tokens), diag=diag)
     elif tokens.eat(MINUS()):
-        expr = Negative(_parse_unary(tokens))
+        expr = Negative(_parse_unary(tokens), diag=diag)
     else:
         expr = _parse_primary(tokens)
 
@@ -95,10 +96,11 @@ def _parse_unary(tokens: BufferedScanner) -> Expression:
 def _parse_factor(tokens: BufferedScanner) -> Expression:
     expr = _parse_unary(tokens)
     while tokens.has_next():
+        diag = tokens.diagnostics()
         if tokens.eat(STAR()):
-            expr = Mult(expr, _parse_unary(tokens))
+            expr = Mult(expr, _parse_unary(tokens), diag=diag)
         elif tokens.eat(SLASH()):
-            expr = Div(expr, _parse_unary(tokens))
+            expr = Div(expr, _parse_unary(tokens), diag=diag)
         else:
             break
 
@@ -108,10 +110,11 @@ def _parse_factor(tokens: BufferedScanner) -> Expression:
 def _parse_term(tokens: BufferedScanner) -> Expression:
     expr = _parse_factor(tokens)
     while tokens.has_next():
+        diag = tokens.diagnostics()
         if tokens.eat(PLUS()):
-            expr = Add(expr, _parse_factor(tokens))
+            expr = Add(expr, _parse_factor(tokens), diag=diag)
         elif tokens.eat(MINUS()):
-            expr = Subtract(expr, _parse_factor(tokens))
+            expr = Subtract(expr, _parse_factor(tokens), diag=diag)
         else:
             break
 
@@ -121,14 +124,15 @@ def _parse_term(tokens: BufferedScanner) -> Expression:
 def _parse_comparison(tokens: BufferedScanner) -> Expression:
     expr = _parse_term(tokens)
     while tokens.has_next():
+        diag = tokens.diagnostics()
         if tokens.eat(LESS()):
-            expr = LessThanExpr(expr, _parse_term(tokens))
+            expr = LessThanExpr(expr, _parse_term(tokens), diag=diag)
         elif tokens.eat(LESS_EQUAL()):
-            expr = LessEqualExpr(expr, _parse_term(tokens))
+            expr = LessEqualExpr(expr, _parse_term(tokens), diag=diag)
         elif tokens.eat(GREATER()):
-            expr = GreaterThanExpr(expr, _parse_term(tokens))
+            expr = GreaterThanExpr(expr, _parse_term(tokens), diag=diag)
         elif tokens.eat(GREATER_EQUAL()):
-            expr = GreaterEqualExpr(expr, _parse_term(tokens))
+            expr = GreaterEqualExpr(expr, _parse_term(tokens), diag=diag)
         else:
             break
 
@@ -138,10 +142,11 @@ def _parse_comparison(tokens: BufferedScanner) -> Expression:
 def _parse_equality(tokens: BufferedScanner) -> Expression:
     expr = _parse_comparison(tokens)
     while tokens.has_next():
+        diag = tokens.diagnostics()
         if tokens.eat(EQUAL_EQUAL()):
-            expr = EqualEqualExpr(expr, _parse_comparison(tokens))
+            expr = EqualEqualExpr(expr, _parse_comparison(tokens), diag=diag)
         elif tokens.eat(BANG_EQUAL()):
-            expr = NotEqualExpr(expr, _parse_comparison(tokens))
+            expr = NotEqualExpr(expr, _parse_comparison(tokens), diag=diag)
         else:
             break
 

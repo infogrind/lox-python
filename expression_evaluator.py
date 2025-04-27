@@ -28,7 +28,7 @@ class TypeError(Exception):
 def _evaluate_number(expr: Expression) -> float:
     x = evaluate_expression(expr)
     if not isinstance(x, float):
-        raise TypeError("Expected: number")
+        raise TypeError("Expected: number:\n" + expr.diag)
     return x
 
 
@@ -97,11 +97,15 @@ def evaluate_expression(expr: Expression) -> float | bool | None:
             x = evaluate_expression(lhs)
             y = evaluate_expression(rhs)
             if type(x) is not type(y):
-                raise TypeError(f"Cannot compare {type(x)} and {type(x)}")
+                raise TypeError(
+                    f"Cannot compare {type(x)} and {type(y)}:\n" + expr.diag
+                )
             return x == y
         case NotEqualExpr(lhs, rhs):
             x = evaluate_expression(lhs)
             y = evaluate_expression(rhs)
             if type(x) is not type(y):
-                raise TypeError(f"Cannot compare {type(x)} and {type(x)}")
+                raise TypeError(
+                    f"Cannot compare {type(x)} and {type(y)}:\n" + expr.diag
+                )
             return x != y

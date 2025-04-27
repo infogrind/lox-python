@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -6,8 +6,9 @@ class Program:
     expr: "Expression | None"
 
 
+@dataclass
 class Expression:
-    pass
+    diag: str = field(kw_only=True, default="")
 
 
 class LiteralExpression(Expression):
