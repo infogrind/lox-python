@@ -5,23 +5,21 @@ from buffered_scanner import BufferedScanner
 from charreader import CharReader
 from diagnostics import Pos
 from expression_evaluator import TypeError, evaluate_expression
-from parser import parse_program
-from syntax import Program
+from parser import parse_expression
+from syntax import Expression
 from token_generator import token_generator
 
 
-def _parse_string(s: str) -> Program:
-    return parse_program(
+def _parse_string(s: str) -> Expression:
+    return parse_expression(
         BufferedScanner(BufferedIterator(token_generator(CharReader(iter([s]))), 2))
     )
 
 
 class ExpressionEvaluatorTest(unittest.TestCase):
     def _evaluate(self, s: str):
-        program = _parse_string(s)
-        self.assertIsNot(program.expr, None, "No expression found in program")
-        assert program.expr is not None
-        return evaluate_expression(program.expr)
+        expr = _parse_string(s)
+        return evaluate_expression(expr)
 
     def assertEvaluates(self, s: str, v: bool | float | None):
         self.assertEqual(

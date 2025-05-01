@@ -1,14 +1,21 @@
+from typing import List
 from dataclasses import dataclass, field
+
 from diagnostics import Diagnostics
 
 
 @dataclass
-class Program:
-    expr: "Expression | None"
+class Statement:
+    pass
 
 
 @dataclass
-class Expression:
+class Program:
+    stmts: List[Statement]
+
+
+@dataclass
+class Expression(Statement):
     diag: Diagnostics = field(kw_only=True)
 
 
@@ -114,3 +121,8 @@ class Mult(Expression):
 class Div(Expression):
     lhs: Expression
     rhs: Expression
+
+
+@dataclass
+class PrintStmt(Statement):
+    expr: Expression

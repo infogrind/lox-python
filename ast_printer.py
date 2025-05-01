@@ -15,7 +15,9 @@ from syntax import (
     Nil,
     NotEqualExpr,
     Number,
+    PrintStmt,
     Program,
+    Statement,
     String,
     Subtract,
     TrueExpr,
@@ -68,9 +70,15 @@ def _print_expression(e: Expression) -> str:
             raise RuntimeError(f"Unknown expression: {e}")
 
 
+def _print_statement(s: Statement):
+    match s:
+        case PrintStmt(expr):
+            return f"( print {_print_expression(expr)} )"
+        case Expression():
+            return _print_expression(s)
+        case _:
+            raise RuntimeError(f"Unknown program type: {s}")
+
+
 def print_program(p: Program) -> str:
-    if p.expr:
-        return _print_expression(p.expr)
-    else:
-        # Empty program
-        return ""
+    return "".join([f"{_print_statement(s)}; " for s in p.stmts]).rstrip()

@@ -1,13 +1,13 @@
-from typing import Generator
-from token_generator import token_generator, ScannerError
-from charreader import CharReader
+import sys
+from typing import Generator, Iterator
+
 from buffered_iterator import BufferedIterator
 from buffered_scanner import BufferedScanner
-from parser import parse_program, ParserError
-from syntax import Program
-from expression_evaluator import evaluate_expression, TypeError
-from typing import Iterator
-import sys
+from charreader import CharReader
+from expression_evaluator import TypeError, evaluate_expression
+from parser import ParserError, parse_statement
+from syntax import Expression, PrintStmt, Statement
+from token_generator import ScannerError, token_generator
 
 
 def lazy_readlines(filename: str) -> Generator[str, None, None]:
@@ -18,13 +18,15 @@ def lazy_readlines(filename: str) -> Generator[str, None, None]:
 
 def _evaluate_lines(lines: Iterator[str]) -> None:
     try:
-        p: Program = parse_program(
+        s: Statement = parse_statement(
             BufferedScanner(BufferedIterator(token_generator(CharReader(lines))))
         )
-        if not p.expr:
-            print("empty program")
-            return
-        print(evaluate_expression(p.expr))
+        match s:
+            case Expression():
+                print(evaluate_expression(s))
+            case PrintStmt():
+                # TODO: Consider different behavior for expressions and print statements
+                print(evaluate_expression(s.expr))
     except ScannerError as e:
         print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
     except ParserError as e:

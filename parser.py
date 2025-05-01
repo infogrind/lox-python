@@ -19,7 +19,9 @@ from syntax import (
     Nil,
     NotEqualExpr,
     Number,
+    PrintStmt,
     Program,
+    Statement,
     String,
     Subtract,
     TrueExpr,
@@ -39,7 +41,9 @@ from tokens import (
     NIL,
     NUMBER,
     PLUS,
+    PRINT,
     RPAREN,
+    SEMICOLON,
     SLASH,
     STAR,
     STRING,
@@ -78,7 +82,7 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
             return Nil(diag=diag)
         case LPAREN():
             start_paren_diag = diag
-            expr = Grouping(_parse_expression(tokens), diag=diag)
+            expr = Grouping(parse_expression(tokens), diag=diag)
             if not tokens.eat(RPAREN()):
                 raise ParserError(
                     "Missing closing parenthesis",
@@ -166,7 +170,10 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 
 # Syntax:
 #
-# Program       -> (Expression)?
+# Program       -> (Statement SEMICOLON)*
+# Statement     -> PrintStmt
+#                  | Expression
+# PrintStmt     -> PRINT LPAREN Expression RPAREN
 # Expression    -> Equality
 # Equality      -> Comparison ( ("==" | "!=") Comparison)*
 # Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
@@ -179,19 +186,51 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 #                  | "(" Expression ")"
 
 
-def _parse_expression(tokens: BufferedScanner) -> Expression:
+def parse_expression(tokens: BufferedScanner) -> Expression:
     return _parse_equality(tokens)
+
+
+def _parse_print_stmt(tokens) -> PrintStmt:
+    tokens.eat(PRINT())
+    lparen_diag = tokens.diagnostics()
+    if not tokens.eat(LPAREN()):
+        raise ParserError("Unexpected token, expected '('", tokens.diagnostics())
+    stmt = PrintStmt(parse_expression(tokens))
+    if not tokens.eat(RPAREN()):
+        raise ParserError(
+            "Missing closing parenthesis in print statement",
+            tokens.diagnostics(),
+            [("Opening parenthesis here", lparen_diag)],
+        )
+
+    return stmt
+
+
+def parse_statement(tokens) -> Statement:
+    if tokens.peek() == PRINT():
+        stmt = _parse_print_stmt(tokens)
+    else:
+        stmt = parse_expression(tokens)
+
+    if not tokens.eat(SEMICOLON()):
+        raise ParserError("Missing semicolon after statement", tokens.diagnostics())
+    return stmt
 
 
 def parse_program(tokens: BufferedScanner) -> Program:
     # Currently only a single expression is supported.
     if tokens.eat(EOF()):
         # No expression (empty program)
-        return Program(None)
+        return Program([])
 
-    expr = _parse_expression(tokens)
+    statements = []
+    while tokens.has_next() and tokens.peek() != EOF():
+        statements.append(parse_statement(tokens))
+
+    if not tokens.has_next():
+        raise ParserError("Unexpected end of input, expected EOF", tokens.diagnostics())
     if not tokens.eat(EOF()):
         raise ParserError(
             "Unexpected token; expected end-of-file", tokens.diagnostics()
         )
-    return Program(expr)
+    return Program(statements)

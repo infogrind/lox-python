@@ -1,13 +1,14 @@
-import unittest
 import io
+import unittest
 from unittest.mock import patch
+
 from main import main
 
 
 class TestMain(unittest.TestCase):
     def test_smoke(self):
         with (
-            patch("sys.stdin", io.StringIO("3+4 * 2 > 10.9 == (nil == nil)")),
+            patch("sys.stdin", io.StringIO("3+4 * 2 > 10.9 == (nil == nil);")),
             patch("sys.stdout", new=io.StringIO()) as fake_out,
             patch("sys.argv", ["main.py"]),
         ):
@@ -68,7 +69,7 @@ Enter some code (ctrl-d to exit):
 
     def test_type_error(self):
         with (
-            patch("sys.stdin", io.StringIO("1 + true")),
+            patch("sys.stdin", io.StringIO("1 + true;")),
             patch("sys.stdout", new=io.StringIO()) as fake_out,
             patch("sys.argv", ["main.py"]),
         ):
@@ -80,7 +81,7 @@ Enter some code (ctrl-d to exit):
             """\
 Enter some code (ctrl-d to exit):
 > Expected: number:
-    1: 1 + true
+    1: 1 + true;
            ^
            ┗--- here
 > """,
