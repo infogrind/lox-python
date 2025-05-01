@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 from buffered_scanner import BufferedScanner
 from diagnostics import Diagnostics
 from syntax import (
@@ -46,10 +48,16 @@ from tokens import (
 
 
 class ParserError(Exception):
-    def __init__(self, message, diagnostics):
+    def __init__(
+        self,
+        message: str,
+        diagnostics: Diagnostics,
+        additional: List[Tuple[str, Diagnostics]] = [],
+    ):
         super().__init__(message)
         self.message: str = message
         self.diagnostics: Diagnostics = diagnostics
+        self.additional: List[Tuple[str, Diagnostics]] = additional
 
 
 def _parse_primary(tokens: BufferedScanner) -> Expression:
@@ -69,9 +77,14 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
         case NIL():
             return Nil(diag=diag)
         case LPAREN():
+            start_paren_diag = diag
             expr = Grouping(_parse_expression(tokens), diag=diag)
             if not tokens.eat(RPAREN()):
-                raise ParserError("Missing closing parenthesis", tokens.diagnostics())
+                raise ParserError(
+                    "Missing closing parenthesis",
+                    tokens.diagnostics(),
+                    [("Opening parenthesis here", start_paren_diag)],
+                )
             return expr
         case PLUS() | SLASH() | STAR():
             raise ParserError("Illegal start of expression", diag)

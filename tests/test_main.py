@@ -39,6 +39,10 @@ Enter some code (ctrl-d to exit):
     1: (1 + 2
              ^
              ┗--- here
+Opening parenthesis here:
+    1: (1 + 2
+       ^
+       ┗--- here
 > """,
         )
 

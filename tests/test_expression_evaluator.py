@@ -1,12 +1,13 @@
-from expression_evaluator import evaluate_expression, TypeError
 import unittest
-from buffered_scanner import BufferedScanner
-from token_generator import token_generator
-from charreader import CharReader
-from parser import parse_program
+
 from buffered_iterator import BufferedIterator
-from syntax import Program
+from buffered_scanner import BufferedScanner
+from charreader import CharReader
 from diagnostics import Pos
+from expression_evaluator import TypeError, evaluate_expression
+from parser import parse_program
+from syntax import Program
+from token_generator import token_generator
 
 
 def _parse_string(s: str) -> Program:

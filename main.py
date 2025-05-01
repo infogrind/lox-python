@@ -29,6 +29,8 @@ def _evaluate_lines(lines: Iterator[str]) -> None:
         print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
     except ParserError as e:
         print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
+        for m, d in e.additional:
+            print(f"{m}:\n{d.diagnostic_string()}")
     except TypeError as e:
         print(f"{e.message}:\n{e.diagnostics.diagnostic_string()}")
     except ZeroDivisionError:
