@@ -1,5 +1,5 @@
-from typing import List
 from dataclasses import dataclass, field
+from typing import List
 
 from diagnostics import Diagnostics
 
@@ -126,3 +126,9 @@ class Div(Expression):
 @dataclass
 class PrintStmt(Statement):
     expr: Expression
+
+
+@dataclass
+class VarDecl(Statement):
+    name: str
+    expr: Expression | None

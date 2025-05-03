@@ -25,15 +25,18 @@ from syntax import (
     String,
     Subtract,
     TrueExpr,
+    VarDecl,
 )
 from tokens import (
     BANG,
     BANG_EQUAL,
     EOF,
+    EQUAL,
     EQUAL_EQUAL,
     FALSE,
     GREATER,
     GREATER_EQUAL,
+    IDENT,
     LESS,
     LESS_EQUAL,
     LPAREN,
@@ -48,6 +51,7 @@ from tokens import (
     STAR,
     STRING,
     TRUE,
+    VAR,
 )
 
 
@@ -172,8 +176,16 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 #
 # Program       -> (Statement SEMICOLON)*
 # Statement     -> PrintStmt
+#                  | VarDecl
+#                  | Assignment
 #                  | Expression
 # PrintStmt     -> PRINT LPAREN Expression RPAREN
+# VarDecl       -> VAR IDENT (EQUAL Expression)?
+#
+# TODO: Add support for assignments like a.b.c = 3
+#
+# Assignment    -> IDENT EQUAL Expression
+# Lvalue        -> IDENT (DOT IDENT)*
 # Expression    -> Equality
 # Equality      -> Comparison ( ("==" | "!=") Comparison)*
 # Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
@@ -182,6 +194,8 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 # Unary         -> ( "-" | "!" ) Primary
 #                  | "+" Expression -> error production
 #                  | Primary
+# TODO: Add IDENT to primary.
+#
 # Primary       -> NUMBER | STRING | TRUE | FALSE | NIL
 #                  | "(" Expression ")"
 
@@ -190,7 +204,7 @@ def parse_expression(tokens: BufferedScanner) -> Expression:
     return _parse_equality(tokens)
 
 
-def _parse_print_stmt(tokens) -> PrintStmt:
+def _parse_print_stmt(tokens: BufferedScanner) -> PrintStmt:
     tokens.eat(PRINT())
     lparen_diag = tokens.diagnostics()
     if not tokens.eat(LPAREN()):
@@ -206,9 +220,26 @@ def _parse_print_stmt(tokens) -> PrintStmt:
     return stmt
 
 
+def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
+    tokens.eat(VAR())
+    match tokens.peek():
+        case IDENT(s):
+            tokens.next()
+            name = s
+        case _:
+            raise ParserError("Unexpected token", tokens.diagnostics())
+
+    if tokens.eat(EQUAL()):
+        return VarDecl(name, parse_expression(tokens))
+    else:
+        return VarDecl(name, None)
+
+
 def parse_statement(tokens) -> Statement:
     if tokens.peek() == PRINT():
         stmt = _parse_print_stmt(tokens)
+    elif tokens.peek() == VAR():
+        stmt = _parse_var_decl(tokens)
     else:
         stmt = parse_expression(tokens)
 

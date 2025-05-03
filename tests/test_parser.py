@@ -124,6 +124,14 @@ print(2 * (8 + 2));""",
             "( + 1.0 2.0 ); ( print 23.0 ); true; ( print ( * 2.0 ( + 8.0 2.0 ) ) );",
         )
 
+    # Variables
+
+    def test_empty_vardecl(self):
+        self.assertParses("var a;", "( var a );")
+
+    def test_vardecl_with_literal(self):
+        self.assertParses("var a = 3;", "( var a 3.0 );")
+
     # Error cases
 
     def test_lonely_plus(self):

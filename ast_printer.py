@@ -21,6 +21,7 @@ from syntax import (
     String,
     Subtract,
     TrueExpr,
+    VarDecl,
 )
 
 
@@ -74,6 +75,11 @@ def _print_statement(s: Statement):
     match s:
         case PrintStmt(expr):
             return f"( print {_print_expression(expr)} )"
+        case VarDecl(name, expr):
+            if expr:
+                return f"( var {name} {_print_expression(expr)} )"
+            else:
+                return f"( var {name} )"
         case Expression():
             return _print_expression(s)
         case _:
