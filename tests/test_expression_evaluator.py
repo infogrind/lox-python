@@ -17,13 +17,15 @@ def _parse_string(s: str) -> Expression:
 
 
 class ExpressionEvaluatorTest(unittest.TestCase):
-    def _evaluate(self, s: str):
-        expr = _parse_string(s)
-        return evaluate_expression(expr)
+    # Literals only
 
-    def assertEvaluates(self, s: str, v: bool | float | None):
+    def _evaluate(self, s: str, vars={}):
+        expr = _parse_string(s)
+        return evaluate_expression(expr, vars)
+
+    def assertEvaluates(self, s: str, v: bool | float | None, vars={}):
         self.assertEqual(
-            self._evaluate(s), v, "Evaluation doesn't match expected value"
+            self._evaluate(s, vars), v, "Evaluation doesn't match expected value"
         )
 
     def test_evaluate_booleans(self):
@@ -187,3 +189,14 @@ class ExpressionEvaluatorTest(unittest.TestCase):
         self.assertEvaluates("(2 * 3) > 5 == 8 - 4*3 < -3", True)
         self.assertEvaluates("(!true == true) == (!false == false)", True)
         self.assertEvaluates("(!true == false) == (!false == false)", False)
+
+    # Expressions with variables
+
+    def test_evaluate_single_numeric_variable(self):
+        self.assertEvaluates("a", 3.0, {"a": 3.0})
+
+    def test_evaluate_single_bool_variable(self):
+        self.assertEvaluates("b", True, {"b": True})
+
+    def test_evaluate_add_variables(self):
+        self.assertEvaluates("c + d", 27.0, {"c": 18.0, "d": 9.0})

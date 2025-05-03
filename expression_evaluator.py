@@ -18,6 +18,7 @@ from syntax import (
     Number,
     Subtract,
     TrueExpr,
+    Variable,
 )
 
 
@@ -28,21 +29,28 @@ class TypeError(Exception):
         self.diagnostics: Diagnostics = diag
 
 
-def _evaluate_number(expr: Expression) -> float:
-    x = evaluate_expression(expr)
+class VariableError(Exception):
+    def __init__(self, message: str, diag: Diagnostics):
+        super().__init__(message)
+        self.message: str = message
+        self.diagnostics: Diagnostics = diag
+
+
+def _evaluate_number(expr: Expression, vars) -> float:
+    x = evaluate_expression(expr, vars)
     if not isinstance(x, float):
         raise TypeError("Expected: number", expr.diag)
     return x
 
 
-def _evaluate_bool(expr: Expression) -> bool:
-    x = evaluate_expression(expr)
+def _evaluate_bool(expr: Expression, vars) -> bool:
+    x = evaluate_expression(expr, vars)
     if not isinstance(x, bool):
         raise TypeError("Expected: bool", expr.diag)
     return x
 
 
-def evaluate_expression(expr: Expression) -> float | bool | None:
+def evaluate_expression(expr: Expression, vars={}) -> float | bool | None:
     match expr:
         # Primaries
         case Number(v):
@@ -53,49 +61,53 @@ def evaluate_expression(expr: Expression) -> float | bool | None:
             return False
         case Nil():
             return None
+        case Variable(name):
+            if name not in vars:
+                raise VariableError(f"'{name}' not defined", expr.diag)
+            return vars[name]
         case Grouping(expr):
-            return evaluate_expression(expr)
+            return evaluate_expression(expr, vars)
         # Unary
         case Negative(expr):
-            x = _evaluate_number(expr)
+            x = _evaluate_number(expr, vars)
             return -x
         case LogicalNot(expr):
-            x = _evaluate_bool(expr)
+            x = _evaluate_bool(expr, vars)
             return not x
         # Factors
         case Mult(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x * y
         case Div(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x / y
         # Terms
         case Add(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x + y
         case Subtract(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x - y
         # Comparisons
         case LessThanExpr(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x < y
         case LessEqualExpr(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x <= y
         case GreaterThanExpr(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x > y
         case GreaterEqualExpr(lhs, rhs):
-            x = _evaluate_number(lhs)
-            y = _evaluate_number(rhs)
+            x = _evaluate_number(lhs, vars)
+            y = _evaluate_number(rhs, vars)
             return x >= y
         # Equality
         case EqualEqualExpr(lhs, rhs):
