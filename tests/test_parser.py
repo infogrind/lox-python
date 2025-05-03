@@ -124,6 +124,9 @@ print(2 * (8 + 2));""",
             "( + 1.0 2.0 ); ( print 23.0 ); true; ( print ( * 2.0 ( + 8.0 2.0 ) ) );",
         )
 
+    def test_expr_with_variables(self):
+        self.assertParses("a + b * c / d;", "( + a ( / ( * b c ) d ) );")
+
     # Variables
 
     def test_empty_vardecl(self):
@@ -131,6 +134,18 @@ print(2 * (8 + 2));""",
 
     def test_vardecl_with_literal(self):
         self.assertParses("var a = 3;", "( var a 3.0 );")
+
+    def test_assignment(self):
+        self.assertParses("a = 3;", "( = a 3.0 );")
+
+    def test_decl_and_assignment(self):
+        self.assertParses("var a; a = 2;", "( var a ); ( = a 2.0 );")
+
+    def test_variable_expression(self):
+        self.assertParses("a;", "a;")
+
+    def test_assignment_from_variable(self):
+        self.assertParses("a = b;", "( = a b );")
 
     # Error cases
 

@@ -49,6 +49,11 @@ class Nil(LiteralExpression):
 
 
 @dataclass
+class Variable(LiteralExpression):
+    name: str
+
+
+@dataclass
 class Grouping(Expression):
     expr: Expression
 
@@ -132,3 +137,9 @@ class PrintStmt(Statement):
 class VarDecl(Statement):
     name: str
     expr: Expression | None
+
+
+@dataclass
+class Assignment(Statement):
+    target: str
+    expr: Expression

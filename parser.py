@@ -4,6 +4,7 @@ from buffered_scanner import BufferedScanner
 from diagnostics import Diagnostics
 from syntax import (
     Add,
+    Assignment,
     Div,
     EqualEqualExpr,
     Expression,
@@ -26,6 +27,7 @@ from syntax import (
     Subtract,
     TrueExpr,
     VarDecl,
+    Variable,
 )
 from tokens import (
     BANG,
@@ -84,6 +86,8 @@ def _parse_primary(tokens: BufferedScanner) -> Expression:
             return FalseExpr(diag=diag)
         case NIL():
             return Nil(diag=diag)
+        case IDENT(name):
+            return Variable(name, diag=diag)
         case LPAREN():
             start_paren_diag = diag
             expr = Grouping(parse_expression(tokens), diag=diag)
@@ -194,9 +198,7 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 # Unary         -> ( "-" | "!" ) Primary
 #                  | "+" Expression -> error production
 #                  | Primary
-# TODO: Add IDENT to primary.
-#
-# Primary       -> NUMBER | STRING | TRUE | FALSE | NIL
+# Primary       -> NUMBER | STRING | TRUE | FALSE | NIL | IDENT
 #                  | "(" Expression ")"
 
 
@@ -235,13 +237,26 @@ def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
         return VarDecl(name, None)
 
 
-def parse_statement(tokens) -> Statement:
-    if tokens.peek() == PRINT():
-        stmt = _parse_print_stmt(tokens)
-    elif tokens.peek() == VAR():
-        stmt = _parse_var_decl(tokens)
+def _parse_assign_or_expr(tokens: BufferedScanner) -> Statement:
+    # Parse first IDENT as an expression.
+    ident_expr = parse_expression(tokens)
+    if tokens.eat(EQUAL()):
+        assert isinstance(ident_expr, Variable)
+        return Assignment(ident_expr.name, parse_expression(tokens))
     else:
-        stmt = parse_expression(tokens)
+        return ident_expr
+
+
+def parse_statement(tokens) -> Statement:
+    match tokens.peek():
+        case PRINT():
+            stmt = _parse_print_stmt(tokens)
+        case VAR():
+            stmt = _parse_var_decl(tokens)
+        case IDENT(_):
+            stmt = _parse_assign_or_expr(tokens)
+        case _:
+            stmt = parse_expression(tokens)
 
     if not tokens.eat(SEMICOLON()):
         raise ParserError("Missing semicolon after statement", tokens.diagnostics())

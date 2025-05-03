@@ -1,5 +1,6 @@
 from syntax import (
     Add,
+    Assignment,
     Div,
     EqualEqualExpr,
     Expression,
@@ -22,6 +23,7 @@ from syntax import (
     Subtract,
     TrueExpr,
     VarDecl,
+    Variable,
 )
 
 
@@ -41,6 +43,8 @@ def _print_expression(e: Expression) -> str:
             return "false"
         case Nil():
             return "nil"
+        case Variable(name):
+            return name
         case Grouping(expr):
             return _print_expression(expr)
         case EqualEqualExpr(lhs, rhs):
@@ -80,6 +84,8 @@ def _print_statement(s: Statement):
                 return f"( var {name} {_print_expression(expr)} )"
             else:
                 return f"( var {name} )"
+        case Assignment(name, expr):
+            return f"( = {name} {_print_expression(expr)} )"
         case Expression():
             return _print_expression(s)
         case _:
