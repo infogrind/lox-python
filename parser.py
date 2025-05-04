@@ -207,11 +207,12 @@ def parse_expression(tokens: BufferedScanner) -> Expression:
 
 
 def _parse_print_stmt(tokens: BufferedScanner) -> PrintStmt:
+    diag = tokens.diagnostics()
     tokens.eat(PRINT())
     lparen_diag = tokens.diagnostics()
     if not tokens.eat(LPAREN()):
         raise ParserError("Unexpected token, expected '('", tokens.diagnostics())
-    stmt = PrintStmt(parse_expression(tokens))
+    stmt = PrintStmt(parse_expression(tokens), diag=diag)
     if not tokens.eat(RPAREN()):
         raise ParserError(
             "Missing closing parenthesis in print statement",
@@ -223,6 +224,7 @@ def _parse_print_stmt(tokens: BufferedScanner) -> PrintStmt:
 
 
 def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
+    diag = tokens.diagnostics()
     tokens.eat(VAR())
     match tokens.peek():
         case IDENT(s):
@@ -232,17 +234,18 @@ def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
             raise ParserError("Unexpected token", tokens.diagnostics())
 
     if tokens.eat(EQUAL()):
-        return VarDecl(name, parse_expression(tokens))
+        return VarDecl(name, parse_expression(tokens), diag=diag)
     else:
-        return VarDecl(name, None)
+        return VarDecl(name, None, diag=diag)
 
 
 def _parse_assign_or_expr(tokens: BufferedScanner) -> Statement:
     # Parse first IDENT as an expression.
+    diag = tokens.diagnostics()
     ident_expr = parse_expression(tokens)
     if tokens.eat(EQUAL()):
         assert isinstance(ident_expr, Variable)
-        return Assignment(ident_expr.name, parse_expression(tokens))
+        return Assignment(ident_expr.name, parse_expression(tokens), diag=diag)
     else:
         return ident_expr
 

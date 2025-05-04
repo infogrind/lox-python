@@ -6,7 +6,7 @@ from diagnostics import Diagnostics
 
 @dataclass
 class Statement:
-    pass
+    diag: Diagnostics = field(kw_only=True)
 
 
 @dataclass
@@ -16,7 +16,7 @@ class Program:
 
 @dataclass
 class Expression(Statement):
-    diag: Diagnostics = field(kw_only=True)
+    pass
 
 
 class LiteralExpression(Expression):
