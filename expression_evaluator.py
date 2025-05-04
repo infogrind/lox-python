@@ -111,14 +111,14 @@ def evaluate_expression(expr: Expression, vars={}) -> float | bool | None:
             return x >= y
         # Equality
         case EqualEqualExpr(lhs, rhs):
-            x = evaluate_expression(lhs)
-            y = evaluate_expression(rhs)
+            x = evaluate_expression(lhs, vars)
+            y = evaluate_expression(rhs, vars)
             if type(x) is not type(y):
                 raise TypeError(f"Cannot compare {type(x)} and {type(y)}", expr.diag)
             return x == y
         case NotEqualExpr(lhs, rhs):
-            x = evaluate_expression(lhs)
-            y = evaluate_expression(rhs)
+            x = evaluate_expression(lhs, vars)
+            y = evaluate_expression(rhs, vars)
             if type(x) is not type(y):
                 raise TypeError(f"Cannot compare {type(x)} and {type(y)}", expr.diag)
             return x != y
