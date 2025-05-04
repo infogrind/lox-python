@@ -1,7 +1,5 @@
 import io
 import unittest
-from contextlib import contextmanager
-from typing import Generator
 from unittest.mock import patch
 
 from main import main
