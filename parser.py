@@ -186,7 +186,15 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 # PrintStmt     -> PRINT LPAREN Expression RPAREN
 # VarDecl       -> VAR IDENT (EQUAL Expression)?
 #
-# TODO: Add support for assignments like a.b.c = 3
+# TODO:
+# - Add support for assignments like a.b.c = 3.
+# - Add blocks ({ statement; statement; })
+# - Add if statements
+# - Add function definitions
+# - Add function calls
+# - Add classes
+# - ...?
+#
 #
 # Assignment    -> IDENT EQUAL Expression
 # Lvalue        -> IDENT (DOT IDENT)*
