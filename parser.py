@@ -196,9 +196,9 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 # - ...?
 #
 #
+# Expression    -> Assignment
 # Assignment    -> IDENT EQUAL Expression
-# Lvalue        -> IDENT (DOT IDENT)*
-# Expression    -> Equality
+#                  | Equality
 # Equality      -> Comparison ( ("==" | "!=") Comparison)*
 # Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
 # Term          -> Factor ( ( "+" | "-") Factor )*
@@ -210,8 +210,29 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 #                  | "(" Expression ")"
 
 
+def _parse_assign_or_equality(tokens: BufferedScanner) -> Expression:
+    # Parse first IDENT as an expression.
+    diag = tokens.diagnostics()
+
+    # This is the place where we can't do one-token-lookahead parsing. This will be even
+    # more true once lvalues become more complex things than just a single identifier.
+    # We try to parse the tokens as an equality. If that's equal to a simple identifier
+    # node followed by an equal sign, we convert the parsed equality node (which is
+    # a variable node) to an assignment node.
+    ident_or_equality = _parse_equality(tokens)
+    diag = tokens.diagnostics()
+    if tokens.eat(EQUAL()):
+        if not isinstance(ident_or_equality, Variable):
+            raise ParserError("Invalid lvalue", diag)
+        return Assignment(
+            ident_or_equality.name, _parse_assign_or_equality(tokens), diag=diag
+        )
+    else:
+        return ident_or_equality
+
+
 def parse_expression(tokens: BufferedScanner) -> Expression:
-    return _parse_equality(tokens)
+    return _parse_assign_or_equality(tokens)
 
 
 def _parse_print_stmt(tokens: BufferedScanner) -> PrintStmt:
@@ -247,25 +268,12 @@ def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
         return VarDecl(name, None, diag=diag)
 
 
-def _parse_assign_or_expr(tokens: BufferedScanner) -> Statement:
-    # Parse first IDENT as an expression.
-    diag = tokens.diagnostics()
-    ident_expr = parse_expression(tokens)
-    if tokens.eat(EQUAL()):
-        assert isinstance(ident_expr, Variable)
-        return Assignment(ident_expr.name, parse_expression(tokens), diag=diag)
-    else:
-        return ident_expr
-
-
 def parse_statement(tokens) -> Statement:
     match tokens.peek():
         case PRINT():
             stmt = _parse_print_stmt(tokens)
         case VAR():
             stmt = _parse_var_decl(tokens)
-        case IDENT(_):
-            stmt = _parse_assign_or_expr(tokens)
         case _:
             stmt = parse_expression(tokens)
 

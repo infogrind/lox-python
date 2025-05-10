@@ -147,6 +147,19 @@ print(2 * (8 + 2));""",
     def test_assignment_from_variable(self):
         self.assertParses("a = b;", "( = a b );")
 
+    def test_nested_assignment(self):
+        self.assertParses("a = b = c;", "( = a ( = b c ) );")
+
+    def test_complex_nested_assignment(self):
+        self.assertParses(
+            "a = b + (3 / (a = 7));", "( = a ( + b ( / 3.0 ( = a 7.0 ) ) ) );"
+        )
+
+    def test_invalid_lvalue(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("3 + a = 5;")
+        self.assertEqual(ctx.exception.message, "Invalid lvalue")
+
     # Error cases
 
     def test_lonely_plus(self):

@@ -140,6 +140,6 @@ class VarDecl(Statement):
 
 
 @dataclass
-class Assignment(Statement):
+class Assignment(Expression):
     target: str
-    expr: Expression
+    expr: "Assignment"

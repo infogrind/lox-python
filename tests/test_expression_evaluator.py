@@ -190,6 +190,16 @@ class ExpressionEvaluatorTest(unittest.TestCase):
         self.assertEvaluates("(!true == true) == (!false == false)", True)
         self.assertEvaluates("(!true == false) == (!false == false)", False)
 
+    # Assignment expressions
+
+    def test_simple_assignment(self):
+        self.assertEvaluates("a = 2", 2.0, {"a": None})
+
+    def test_nested_assignment(self):
+        self.assertEvaluates(
+            "a = 2 + (b = 3 + (c = 4))", 9.0, {"a": None, "b": None, "c": None}
+        )
+
     # Expressions with variables
 
     def test_evaluate_single_numeric_variable(self):

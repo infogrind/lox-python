@@ -80,6 +80,23 @@ class TestInterpreter(unittest.TestCase):
                 ["var x = 5555;", "x = 384.1;", "x = -12.3;", "print(x);"]
             )
 
+    def test_nested_assignment_simple(self):
+        i = Interpreter()
+        i.interpret(["var x;", "var y;", "x = y = 12.34;"])
+        with self.assertOutputs("12.34"):
+            i.interpret("print(x);")
+        with self.assertOutputs("12.34"):
+            i.interpret("print(y);")
+
+    def test_complex_nested_assignment(self):
+        i = Interpreter()
+        i.interpret(["var x;", "var y;"])
+        i.interpret("x = 3 + (y = 4);")
+        with self.assertOutputs("7.0"):
+            i.interpret("print(x);")
+        with self.assertOutputs("4.0"):
+            i.interpret("print(y);")
+
     def test_expr_with_error(self):
         with self.assertRaises(TypeError):
             Interpreter().interpret("3 + true;")

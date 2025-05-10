@@ -1,6 +1,7 @@
 from diagnostics import Diagnostics
 from syntax import (
     Add,
+    Assignment,
     Div,
     EqualEqualExpr,
     Expression,
@@ -122,3 +123,12 @@ def evaluate_expression(expr: Expression, vars={}) -> float | bool | None:
             if type(x) is not type(y):
                 raise TypeError(f"Cannot compare {type(x)} and {type(y)}", expr.diag)
             return x != y
+        case Assignment(target, expr):
+            if target not in vars:
+                raise VariableError(
+                    f"Variable {target} not declared (vars: {repr(vars)})", expr.diag
+                )
+            vars[target] = evaluate_expression(expr, vars)
+            return vars[target]
+        case _:
+            raise RuntimeError(f"Don't know how to evaluate expression {repr(expr)}")

@@ -22,14 +22,10 @@ class Interpreter:
             case VarDecl(name, value):
                 assert value is not None  # Satisfy the linter.
                 self._vars[name] = evaluate_expression(value)
-            case Assignment(target, expr):
-                if target not in self._vars:
-                    raise VariableError(f"Variable {target} not declared", stmt.diag)
-                self._vars[target] = None if expr is None else evaluate_expression(expr)
             case Expression():
                 # Expressions have no effect, except that they can cause an error, so
                 # we always evaluate them.
-                evaluate_expression(stmt)
+                evaluate_expression(stmt, self._vars)
 
     def interpret(self, code: Iterator[str] | List[str] | str):
         if isinstance(code, str):

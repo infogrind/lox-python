@@ -71,6 +71,8 @@ def _print_expression(e: Expression) -> str:
             return f"( - {_print_expression(expr)} )"
         case LogicalNot(expr):
             return f"( ! {_print_expression(expr)} )"
+        case Assignment(target, expr):
+            return f"( = {target} {_print_expression(expr)} )"
         case _:
             raise RuntimeError(f"Unknown expression: {e}")
 
