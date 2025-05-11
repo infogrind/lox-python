@@ -3,6 +3,40 @@ from typing import List
 
 from diagnostics import Diagnostics
 
+# Syntax:
+#
+# Program       -> Declaration* EOF
+# Declaration   -> VarDecl
+#                  | Statement
+# VarDecl       -> VAR IDENT (EQUAL Expression)? SEMICOLON
+# Statement     -> PrintStmt
+#                  | ExprStmt
+# PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
+# ExprStmt      -> Expression SEMICOLON
+#
+# TODO:
+# - Add support for assignments like a.b.c = 3.
+# - Add blocks ({ statement; statement; })
+# - Add if statements
+# - Add function definitions
+# - Add function calls
+# - Add classes
+# - ...?
+#
+#
+# Expression    -> Assignment
+# Assignment    -> IDENT EQUAL Expression
+#                  | Equality
+# Equality      -> Comparison ( ("==" | "!=") Comparison)*
+# Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
+# Term          -> Factor ( ( "+" | "-") Factor )*
+# Factor        -> Unary ( ( "*" | "/" ) Unary )*
+# Unary         -> ( "-" | "!" ) Primary
+#                  | "+" Expression -> error production
+#                  | Primary
+# Primary       -> NUMBER | STRING | TRUE | FALSE | NIL | IDENT
+#                  | "(" Expression ")"
+
 
 @dataclass
 class Declaration:
