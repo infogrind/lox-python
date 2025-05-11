@@ -1,9 +1,11 @@
 from syntax import (
     Add,
     Assignment,
+    Declaration,
     Div,
     EqualEqualExpr,
     Expression,
+    ExprStmt,
     FalseExpr,
     GreaterEqualExpr,
     GreaterThanExpr,
@@ -81,18 +83,24 @@ def _print_statement(s: Statement):
     match s:
         case PrintStmt(expr):
             return f"( print {_print_expression(expr)} )"
+        case ExprStmt(expr):
+            return _print_expression(expr)
+        case _:
+            raise RuntimeError(f"Unknown statement type: {s}")
+
+
+def _print_declaration(d: Declaration) -> str:
+    match d:
         case VarDecl(name, expr):
             if expr:
                 return f"( var {name} {_print_expression(expr)} )"
             else:
                 return f"( var {name} )"
-        case Assignment(name, expr):
-            return f"( = {name} {_print_expression(expr)} )"
-        case Expression():
-            return _print_expression(s)
+        case Statement():
+            return _print_statement(d)
         case _:
-            raise RuntimeError(f"Unknown program type: {s}")
+            raise RuntimeError("Unknown declaration type: {d}")
 
 
 def print_program(p: Program) -> str:
-    return "".join([f"{_print_statement(s)}; " for s in p.stmts]).rstrip()
+    return "\n".join([f"{_print_declaration(d)}" for d in p.decls]).rstrip()

@@ -5,9 +5,11 @@ from diagnostics import Diagnostics
 from syntax import (
     Add,
     Assignment,
+    Declaration,
     Div,
     EqualEqualExpr,
     Expression,
+    ExprStmt,
     FalseExpr,
     GreaterEqualExpr,
     GreaterThanExpr,
@@ -178,13 +180,14 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
 
 # Syntax:
 #
-# Program       -> (Statement SEMICOLON)*
+# Program       -> Declaration* EOF
+# Declaration   -> VarDecl
+#                  | Statement
+# VarDecl       -> VAR IDENT (EQUAL Expression)? SEMICOLON
 # Statement     -> PrintStmt
-#                  | VarDecl
-#                  | Assignment
-#                  | Expression
-# PrintStmt     -> PRINT LPAREN Expression RPAREN
-# VarDecl       -> VAR IDENT (EQUAL Expression)?
+#                  | ExprStmt
+# PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
+# ExprStmt      -> Expression SEMICOLON
 #
 # TODO:
 # - Add support for assignments like a.b.c = 3.
@@ -248,6 +251,10 @@ def _parse_print_stmt(tokens: BufferedScanner) -> PrintStmt:
             tokens.diagnostics(),
             [("Opening parenthesis here", lparen_diag)],
         )
+    if not tokens.eat(SEMICOLON()):
+        raise ParserError(
+            "Missing semicolon after print statement", tokens.diagnostics()
+        )
 
     return stmt
 
@@ -263,22 +270,40 @@ def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
             raise ParserError("Unexpected token", tokens.diagnostics())
 
     if tokens.eat(EQUAL()):
-        return VarDecl(name, parse_expression(tokens), diag=diag)
+        decl = VarDecl(name, parse_expression(tokens), diag=diag)
     else:
-        return VarDecl(name, None, diag=diag)
+        decl = VarDecl(name, None, diag=diag)
+    if not tokens.eat(SEMICOLON()):
+        raise ParserError(
+            "Missing semicolon after variable declaration", tokens.diagnostics()
+        )
+
+    return decl
 
 
 def parse_statement(tokens) -> Statement:
+    diag = tokens.diagnostics()
     match tokens.peek():
         case PRINT():
             stmt = _parse_print_stmt(tokens)
+        case _:
+            # ExprStmt parsed here, contains a semicolon.
+            # The Expression doesnt.
+            stmt = ExprStmt(parse_expression(tokens), diag=diag)
+            if not tokens.eat(SEMICOLON()):
+                raise ParserError(
+                    "Missing semicolon after expression statement", tokens.diagnostics()
+                )
+
+    return stmt
+
+
+def _parse_declaration(tokens: BufferedScanner) -> Declaration:
+    match tokens.peek():
         case VAR():
             stmt = _parse_var_decl(tokens)
         case _:
-            stmt = parse_expression(tokens)
-
-    if not tokens.eat(SEMICOLON()):
-        raise ParserError("Missing semicolon after statement", tokens.diagnostics())
+            stmt = parse_statement(tokens)
     return stmt
 
 
@@ -288,9 +313,9 @@ def parse_program(tokens: BufferedScanner) -> Program:
         # No expression (empty program)
         return Program([])
 
-    statements = []
+    declarations = []
     while tokens.has_next() and tokens.peek() != EOF():
-        statements.append(parse_statement(tokens))
+        declarations.append(_parse_declaration(tokens))
 
     if not tokens.has_next():
         raise ParserError("Unexpected end of input, expected EOF", tokens.diagnostics())
@@ -298,4 +323,4 @@ def parse_program(tokens: BufferedScanner) -> Program:
         raise ParserError(
             "Unexpected token; expected end-of-file", tokens.diagnostics()
         )
-    return Program(statements)
+    return Program(declarations)

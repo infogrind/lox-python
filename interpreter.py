@@ -3,9 +3,9 @@ from typing import Iterator, List
 from buffered_iterator import BufferedIterator
 from buffered_scanner import BufferedScanner
 from charreader import CharReader
-from expression_evaluator import VariableError, evaluate_expression
+from expression_evaluator import evaluate_expression
 from parser import parse_program
-from syntax import Assignment, Expression, PrintStmt, Statement, VarDecl
+from syntax import Declaration, ExprStmt, PrintStmt, Statement, VarDecl
 from token_generator import token_generator
 
 
@@ -17,15 +17,18 @@ class Interpreter:
         match stmt:
             case PrintStmt(expr):
                 print(evaluate_expression(expr, self._vars))
+            case ExprStmt(expr):
+                evaluate_expression(expr, self._vars)
+
+    def _interpret_declaration(self, decl: Declaration) -> None:
+        match decl:
             case VarDecl(name, None):
                 self._vars[name] = None
             case VarDecl(name, value):
                 assert value is not None  # Satisfy the linter.
                 self._vars[name] = evaluate_expression(value)
-            case Expression():
-                # Expressions have no effect, except that they can cause an error, so
-                # we always evaluate them.
-                evaluate_expression(stmt, self._vars)
+            case Statement():
+                self._interpret_statement(decl)
 
     def interpret(self, code: Iterator[str] | List[str] | str):
         if isinstance(code, str):
@@ -35,5 +38,5 @@ class Interpreter:
         p = parse_program(
             BufferedScanner(BufferedIterator(token_generator(CharReader(code))))
         )
-        for stmt in p.stmts:
-            self._interpret_statement(stmt)
+        for decl in p.decls:
+            self._interpret_declaration(decl)

@@ -5,18 +5,22 @@ from diagnostics import Diagnostics
 
 
 @dataclass
-class Statement:
+class Declaration:
     diag: Diagnostics = field(kw_only=True)
 
 
 @dataclass
 class Program:
-    stmts: List[Statement]
+    decls: List[Declaration]
+
+
+class Statement(Declaration):
+    pass
 
 
 @dataclass
-class Expression(Statement):
-    pass
+class Expression:
+    diag: Diagnostics = field(kw_only=True)
 
 
 class LiteralExpression(Expression):
@@ -134,7 +138,12 @@ class PrintStmt(Statement):
 
 
 @dataclass
-class VarDecl(Statement):
+class ExprStmt(Statement):
+    expr: Expression
+
+
+@dataclass
+class VarDecl(Declaration):
     name: str
     expr: Expression | None
 
