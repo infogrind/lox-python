@@ -56,6 +56,7 @@ def scan_input() -> None:
 def main() -> None:
     if len(sys.argv) > 2:
         print("Syntax error.")
+        sys.exit(1)
 
     if len(sys.argv) == 2:
         scan_file(sys.argv[1])

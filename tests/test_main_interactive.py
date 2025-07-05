@@ -89,3 +89,13 @@ Enter some code (ctrl-d to exit):
                   ┗--- here
 > """,
         )
+
+    def test_too_many_arguments(self):
+        with (
+            patch("sys.stdout", new=io.StringIO()) as fake_out,
+            patch("sys.argv", ["main.py", "file1.lox", "file2.lox"]),
+        ):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(fake_out.getvalue(), "Syntax error.\n")
