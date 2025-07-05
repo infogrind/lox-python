@@ -27,3 +27,7 @@ Always work in this order after having identified a bug:
 ## Commit Message Guidelines
 
 - Use backticks for code in commit messages
+
+## References
+
+- See https://craftinginterpreters.com/appendix-i.html for the Lox Grammar reference
