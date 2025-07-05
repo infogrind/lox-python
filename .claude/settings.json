@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(git add:*)",
+      "Bash(git log:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": []
+  }
+}
