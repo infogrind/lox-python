@@ -17,6 +17,7 @@ from syntax import (
     Nil,
     NotEqualExpr,
     Number,
+    String,
     Subtract,
     TrueExpr,
     Variable,
@@ -51,10 +52,12 @@ def _evaluate_bool(expr: Expression, vars) -> bool:
     return x
 
 
-def evaluate_expression(expr: Expression, vars={}) -> float | bool | None:
+def evaluate_expression(expr: Expression, vars={}) -> float | bool | str | None:
     match expr:
         # Primaries
         case Number(v):
+            return v
+        case String(v):
             return v
         case TrueExpr():
             return True

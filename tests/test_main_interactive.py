@@ -90,6 +90,22 @@ Enter some code (ctrl-d to exit):
 > """,
         )
 
+    def test_unclosed_block_error(self):
+        self.assertOutputs(
+            "{ 1; 2;",
+            """\
+Enter some code (ctrl-d to exit):
+> Expected '}' after block:
+    1: { 1; 2;
+              ^
+              ┗--- here
+Opening brace here:
+    1: { 1; 2;
+       ^
+       ┗--- here
+> """,
+        )
+
     def test_too_many_arguments(self):
         with (
             patch("sys.stdout", new=io.StringIO()) as fake_out,

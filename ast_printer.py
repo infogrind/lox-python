@@ -1,6 +1,7 @@
 from syntax import (
     Add,
     Assignment,
+    BlockStmt,
     Declaration,
     Div,
     EqualEqualExpr,
@@ -85,6 +86,12 @@ def _print_statement(s: Statement):
             return f"( print {_print_expression(expr)} )"
         case ExprStmt(expr):
             return _print_expression(expr)
+        case BlockStmt(declarations):
+            if declarations:
+                inner = " ".join([f"{_print_declaration(d)};" for d in declarations])
+                return f"{{ {inner} }}"
+            else:
+                return "{ }"
         case _:
             raise RuntimeError(f"Unknown statement type: {s}")
 

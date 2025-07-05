@@ -110,3 +110,44 @@ class TestInterpreter(unittest.TestCase):
     def test_variable_declaration_with_variable_reference(self):
         with self.assertOutputs("10.0"):
             Interpreter().interpret(["var x = 5;", "var y = x + 5;", "print(y);"])
+
+    def test_empty_block(self):
+        with self.assertOutputs("42.0"):
+            Interpreter().interpret(["var x = 42;", "{}", "print(x);"])
+
+    def test_block_with_statements(self):
+        with self.assertOutputs("1.0\n2.0"):
+            Interpreter().interpret(
+                ["var x = 1;", "{", "  print(x);", "  var y = 2;", "  print(y);", "}"]
+            )
+
+    def test_block_scoping(self):
+        with self.assertOutputs("inner\nouter"):
+            Interpreter().interpret(
+                [
+                    'var x = "outer";',
+                    "{",
+                    '  var x = "inner";',
+                    "  print(x);",
+                    "}",
+                    "print(x);",
+                ]
+            )
+
+    def test_nested_blocks(self):
+        with self.assertOutputs("1.0\n2.0\n3.0\n2.0"):
+            Interpreter().interpret(
+                [
+                    "var x = 1;",
+                    "{",
+                    "  print(x);",
+                    "  var x = 2;",
+                    "  {",
+                    "    print(x);",
+                    "    var x = 3;",
+                    "    print(x);",
+                    "  }",
+                    "  print(x);",
+                    "}",
+                ]
+            )

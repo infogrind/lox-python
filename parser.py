@@ -5,6 +5,7 @@ from diagnostics import Diagnostics
 from syntax import (
     Add,
     Assignment,
+    BlockStmt,
     Declaration,
     Div,
     EqualEqualExpr,
@@ -41,6 +42,7 @@ from tokens import (
     GREATER,
     GREATER_EQUAL,
     IDENT,
+    LBRACE,
     LESS,
     LESS_EQUAL,
     LPAREN,
@@ -49,6 +51,7 @@ from tokens import (
     NUMBER,
     PLUS,
     PRINT,
+    RBRACE,
     RPAREN,
     SEMICOLON,
     SLASH,
@@ -286,6 +289,8 @@ def parse_statement(tokens) -> Statement:
     match tokens.peek():
         case PRINT():
             stmt = _parse_print_stmt(tokens)
+        case LBRACE():
+            stmt = _parse_block_stmt(tokens)
         case _:
             # ExprStmt parsed here, contains a semicolon.
             # The Expression doesnt.
@@ -324,3 +329,35 @@ def parse_program(tokens: BufferedScanner) -> Program:
             "Unexpected token; expected end-of-file", tokens.diagnostics()
         )
     return Program(declarations)
+
+
+def _parse_block_stmt(tokens: BufferedScanner) -> BlockStmt:
+    diag = tokens.diagnostics()
+    lbrace_diag = tokens.diagnostics()
+    tokens.eat(LBRACE())
+
+    declarations = []
+    while tokens.has_next() and tokens.peek() != RBRACE():
+        if tokens.peek() == EOF():
+            raise ParserError(
+                "Expected '}' after block",
+                tokens.diagnostics(),
+                [("Opening brace here", lbrace_diag)],
+            )
+        declarations.append(_parse_declaration(tokens))
+
+    if not tokens.has_next():
+        raise ParserError(
+            "Expected '}' after block",
+            tokens.diagnostics(),
+            [("Opening brace here", lbrace_diag)],
+        )
+
+    if not tokens.eat(RBRACE()):
+        raise ParserError(
+            "Expected '}' after block",
+            tokens.diagnostics(),
+            [("Opening brace here", lbrace_diag)],
+        )
+
+    return BlockStmt(declarations, diag=diag)

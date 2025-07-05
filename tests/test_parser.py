@@ -184,3 +184,36 @@ true
         self.assertEqual(
             context.exception.message, "Missing semicolon after expression statement"
         )
+
+    def test_empty_block(self):
+        self.assertParses("{}", "{ }")
+
+    def test_block_with_single_statement(self):
+        self.assertParses("{ 42; }", "{ 42.0; }")
+
+    def test_block_with_multiple_statements(self):
+        self.assertParses("{ 1; 2; 3; }", "{ 1.0; 2.0; 3.0; }")
+
+    def test_block_with_variable_declaration(self):
+        self.assertParses("{ var x = 5; }", "{ ( var x 5.0 ); }")
+
+    def test_nested_blocks(self):
+        self.assertParses("{ { 1; } }", "{ { 1.0; }; }")
+
+    def test_block_with_mixed_declarations(self):
+        self.assertParses(
+            "{ var x = 1; print(x); var y = 2; }",
+            "{ ( var x 1.0 ); ( print x ); ( var y 2.0 ); }",
+        )
+
+    def test_unclosed_block(self):
+        with self.assertRaises(ParserError) as context:
+            parse_string("{ 1; 2;")
+        self.assertEqual(context.exception.message, "Expected '}' after block")
+
+    def test_block_missing_opening_brace(self):
+        with self.assertRaises(ParserError) as context:
+            parse_string("1; }")
+        self.assertEqual(
+            context.exception.message, "Unexpected token RBRACE() while parsing primary"
+        )

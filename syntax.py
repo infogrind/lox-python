@@ -11,12 +11,13 @@ from diagnostics import Diagnostics
 # VarDecl       -> VAR IDENT (EQUAL Expression)? SEMICOLON
 # Statement     -> PrintStmt
 #                  | ExprStmt
+#                  | BlockStmt
 # PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
 # ExprStmt      -> Expression SEMICOLON
+# BlockStmt     -> LBRACE Declaration* RBRACE
 #
 # TODO:
 # - Add support for assignments like a.b.c = 3.
-# - Add blocks ({ statement; statement; })
 # - Add if statements
 # - Add function definitions
 # - Add function calls
@@ -186,3 +187,8 @@ class VarDecl(Declaration):
 class Assignment(Expression):
     target: str
     expr: "Assignment"
+
+
+@dataclass
+class BlockStmt(Statement):
+    declarations: List[Declaration]
