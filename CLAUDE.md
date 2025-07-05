@@ -23,3 +23,7 @@ Always work in this order after having identified a bug:
 4. Format code.
 5. Verify that the test passes.
 6. Create a local commit but NEVER push anything yourself.
+
+## Commit Message Guidelines
+
+- Use backticks for code in commit messages
