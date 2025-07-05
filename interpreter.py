@@ -26,7 +26,7 @@ class Interpreter:
                 self._vars[name] = None
             case VarDecl(name, value):
                 assert value is not None  # Satisfy the linter.
-                self._vars[name] = evaluate_expression(value)
+                self._vars[name] = evaluate_expression(value, self._vars)
             case Statement():
                 self._interpret_statement(decl)
 

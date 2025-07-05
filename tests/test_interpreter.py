@@ -106,3 +106,7 @@ class TestInterpreter(unittest.TestCase):
         i.interpret("var a = 77;")
         with self.assertRaises(TypeError):
             i.interpret("print(true == a);")
+
+    def test_variable_declaration_with_variable_reference(self):
+        with self.assertOutputs("10.0"):
+            Interpreter().interpret(["var x = 5;", "var y = x + 5;", "print(y);"])
