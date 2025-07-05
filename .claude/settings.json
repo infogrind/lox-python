@@ -6,7 +6,9 @@
       "Bash(uv run pytest:*)",
       "Bash(git add:*)",
       "Bash(git log:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:craftinginterpreters.com)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }
