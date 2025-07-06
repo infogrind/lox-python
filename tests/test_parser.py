@@ -7,7 +7,7 @@ from charreader import CharReader
 from diagnostics import Pos
 from parser import ParserError, parse_program
 from syntax import Program
-from token_generator import token_generator
+from token_generator import ScannerError, token_generator
 
 
 def parse_string(s: str) -> Program:
@@ -116,16 +116,8 @@ class TestParser(unittest.TestCase):
 
     def test_multi_statement_program(self):
         self.assertParses(
-            """\
-1 + 2;
-print(23);
-true;
-print(2 * (8 + 2));""",
-            """\
-( + 1.0 2.0 )
-( print 23.0 )
-true
-( print ( * 2.0 ( + 8.0 2.0 ) ) )""",
+            "1 + 2;\nprint(23);\ntrue;\nprint(2 * (8 + 2));",
+            "( + 1.0 2.0 )\n( print 23.0 )\ntrue\n( print ( * 2.0 ( + 8.0 2.0 ) ) )",
         )
 
     def test_expr_with_variables(self):
@@ -237,3 +229,47 @@ true
         self.assertEqual(
             context.exception.message, "Unexpected token RBRACE() while parsing primary"
         )
+
+    def test_deeply_nested_expression(self):
+        self.assertParses(
+            "((((1 + 2) * 3) - 4) / 5) == 6;",
+            "( == ( / ( - ( * ( + 1.0 2.0 ) 3.0 ) 4.0 ) 5.0 ) 6.0 )",
+        )
+
+    def test_left_associativity(self):
+        self.assertParses("1 - 2 - 3;", "( - ( - 1.0 2.0 ) 3.0 )")
+
+    def test_assignment_associativity(self):
+        self.assertParses("a = b = c = d;", "( = a ( = b ( = c d ) ) )")
+
+    def test_dangling_else(self):
+        self.assertParses("if (a) if (b) c; else d;", "( if a ( if b c else d ) )")
+
+    def test_if_without_then(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("if (true);")
+        self.assertEqual(
+            ctx.exception.message, "Unexpected token SEMICOLON() while parsing primary"
+        )
+
+    def test_missing_variable_name(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("var = 10;")
+        self.assertEqual(ctx.exception.message, "Unexpected token")
+
+    def test_assignment_to_literal(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("123 = 456;")
+        self.assertEqual(ctx.exception.message, "Invalid lvalue")
+
+    def test_missing_semicolon_after_vardecl(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("var a = 1")
+        self.assertEqual(
+            ctx.exception.message, "Missing semicolon after variable declaration"
+        )
+
+    def test_mismatched_parentheses(self):
+        with self.assertRaises(ScannerError) as ctx:
+            parse_string("(1 + 2];")
+        self.assertEqual(ctx.exception.message, "Invalid token character")
