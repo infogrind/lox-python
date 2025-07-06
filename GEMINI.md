@@ -41,19 +41,20 @@ development process), then add support to the interpreter. Finally, add a test t
 For example, suppose you are adding support for `if` clauses. You would then do things in this order:
 
 1. Add a definition for the AST element to syntax.py.
-2. Write tests in tests/test_parser.py.
-3. Verify that the tests fail.
-4. Implement parsing functionality in parser.py.
-5. Verify that the tests pass.
-6. Write tests in tests/test_interpreter.py.
-7. Verify that the interpreter tests fail.
-8. Implement interpreter support in interpreter.py.
-9. Verify that the tests pass.
-10. Add a test (or several tests if needed) to tests/test_main_interactive.py.
-11. Verify that the test or tests in tests/test_main_interactive.py pass.
-12. Run the formatter to ensure code style is adhered to.
-13. Run all tests again, to ensure there are no regressions.
-14. Create the local commit.
+2. Update the comment block at the top of syntax.py.
+3. Write tests in tests/test_parser.py.
+4. Verify that the tests fail.
+5. Implement parsing functionality in parser.py.
+6. Verify that the tests pass.
+7. Write tests in tests/test_interpreter.py.
+8. Verify that the interpreter tests fail.
+9. Implement interpreter support in interpreter.py.
+10. Verify that the tests pass.
+11. Add a test (or several tests if needed) to tests/test_main_interactive.py.
+12. Verify that the test or tests in tests/test_main_interactive.py pass.
+13. Run the formatter to ensure code style is adhered to.
+14. Run all tests again, to ensure there are no regressions.
+15. Create the local commit.
 
 ## Commit Message Guidelines
 
@@ -73,3 +74,7 @@ GEMINI.md. GEMINI.md must always be in separate commits that are only about
 Gemini instructions.
 - The first line of a commit message should not be longer than 72 characters,
 and all the other lines should have a maximum of 100 characters.
+
+# GEMINI.md Memory Updates
+
+Whenever I prefix a prompt with the hash sign `#`, it means I want you to memorize the instruction in GEMINI.md. In that case, please update GEMINI.md accordingly.
