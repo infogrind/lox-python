@@ -15,6 +15,7 @@ from syntax import (
     GreaterEqualExpr,
     GreaterThanExpr,
     Grouping,
+    IfStmt,
     LessEqualExpr,
     LessThanExpr,
     LogicalNot,
@@ -35,6 +36,7 @@ from syntax import (
 from tokens import (
     BANG,
     BANG_EQUAL,
+    ELSE,
     EOF,
     EQUAL,
     EQUAL_EQUAL,
@@ -42,6 +44,7 @@ from tokens import (
     GREATER,
     GREATER_EQUAL,
     IDENT,
+    IF,
     LBRACE,
     LESS,
     LESS_EQUAL,
@@ -284,6 +287,28 @@ def _parse_var_decl(tokens: BufferedScanner) -> VarDecl:
     return decl
 
 
+def _parse_if_statement(tokens: BufferedScanner) -> IfStmt:
+    diag = tokens.diagnostics()
+    tokens.eat(IF())
+    lparen_diag = tokens.diagnostics()
+    if not tokens.eat(LPAREN()):
+        raise ParserError("Expected '(' after 'if'", tokens.diagnostics())
+    condition = parse_expression(tokens)
+    if not tokens.eat(RPAREN()):
+        raise ParserError(
+            "Expected ')' after if condition",
+            tokens.diagnostics(),
+            [("Opening parenthesis here", lparen_diag)],
+        )
+
+    then_branch = parse_statement(tokens)
+    else_branch = None
+    if tokens.eat(ELSE()):
+        else_branch = parse_statement(tokens)
+
+    return IfStmt(condition, then_branch, else_branch, diag=diag)
+
+
 def parse_statement(tokens) -> Statement:
     diag = tokens.diagnostics()
     match tokens.peek():
@@ -291,6 +316,8 @@ def parse_statement(tokens) -> Statement:
             stmt = _parse_print_stmt(tokens)
         case LBRACE():
             stmt = _parse_block_stmt(tokens)
+        case IF():
+            stmt = _parse_if_statement(tokens)
         case _:
             # ExprStmt parsed here, contains a semicolon.
             # The Expression doesnt.

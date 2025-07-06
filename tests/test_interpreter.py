@@ -151,3 +151,61 @@ class TestInterpreter(unittest.TestCase):
                     "}",
                 ]
             )
+
+    def test_if_true(self):
+        with self.assertOutputs("3.0"):
+            Interpreter().interpret("if (true) print(3);")
+
+    def test_if_false(self):
+        with self.assertOutputs(""):
+            Interpreter().interpret("if (false) print(3);")
+
+    def test_if_else_true(self):
+        with self.assertOutputs("3.0"):
+            Interpreter().interpret("if (true) print(3); else print(4);")
+
+    def test_if_else_false(self):
+        with self.assertOutputs("4.0"):
+            Interpreter().interpret("if (false) print(3); else print(4);")
+
+    def test_if_with_block(self):
+        with self.assertOutputs("1.0\n2.0"):
+            Interpreter().interpret(["if (true) {", "  print(1);", "  print(2);", "}"])
+
+    def test_if_else_with_blocks(self):
+        with self.assertOutputs("3.0\n4.0"):
+            Interpreter().interpret(
+                [
+                    "if (true) {",
+                    "  print(3);",
+                    "} else {",
+                    "  print(4);",
+                    "}",
+                    "print(4);",
+                ]
+            )
+
+    def test_if_truthiness_nil_is_false(self):
+        # `nil` is the only falsey value besides `false`.
+        with self.assertOutputs("no"):
+            Interpreter().interpret('if (nil) print("yes"); else print("no");')
+
+    def test_if_truthiness_zero_is_true(self):
+        # Any number including 0 is considered truthy.
+        with self.assertOutputs("yes"):
+            Interpreter().interpret('if (0) print("yes"); else print("no");')
+
+    def test_if_truthiness_number_is_true(self):
+        # Any non-zero number is considered truthy.
+        with self.assertOutputs("yes"):
+            Interpreter().interpret('if (123) print("yes"); else print("no");')
+
+    def test_if_truthiness_empty_string_is_true(self):
+        # An empty string is considered truthy.
+        with self.assertOutputs("yes"):
+            Interpreter().interpret('if ("") print("yes"); else print("no");')
+
+    def test_if_truthiness_string_is_true(self):
+        # Any non-empty string is considered truthy.
+        with self.assertOutputs("yes"):
+            Interpreter().interpret('if ("hello") print("yes"); else print("no");')

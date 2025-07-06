@@ -211,6 +211,26 @@ true
             parse_string("{ 1; 2;")
         self.assertEqual(context.exception.message, "Expected '}' after block")
 
+    def test_if_statement(self):
+        self.assertParses("if (true) 1;", "( if true 1.0 )")
+
+    def test_if_else_statement(self):
+        self.assertParses("if (true) 1; else 2;", "( if true 1.0 else 2.0 )")
+
+    def test_nested_if_statement(self):
+        self.assertParses(
+            "if (true) if (false) 1; else 2;",
+            "( if true ( if false 1.0 else 2.0 ) )",
+        )
+
+    def test_if_with_block(self):
+        self.assertParses("if (true) { 1; }", "( if true { 1.0; } )")
+
+    def test_if_else_with_blocks(self):
+        self.assertParses(
+            "if (true) { 1; } else { 2; }", "( if true { 1.0; } else { 2.0; } )"
+        )
+
     def test_block_missing_opening_brace(self):
         with self.assertRaises(ParserError) as context:
             parse_string("1; }")

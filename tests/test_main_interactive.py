@@ -115,3 +115,28 @@ Opening brace here:
                 main()
             self.assertEqual(cm.exception.code, 1)
             self.assertEqual(fake_out.getvalue(), "Syntax error.\n")
+
+    def test_if_statement_interactive(self):
+        self.assertOutputs(
+            "if (true) print(1); else print(2);",
+            """\
+Enter some code (ctrl-d to exit):
+> 1.0
+> """,
+        )
+
+    def test_if_statement_missing_closing_paren(self):
+        self.assertOutputs(
+            "if (true",
+            """\
+Enter some code (ctrl-d to exit):
+> Expected ')' after if condition:
+    1: if (true
+               ^
+               ┗--- here
+Opening parenthesis here:
+    1: if (true
+          ^
+          ┗--- here
+> """,
+        )

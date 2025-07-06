@@ -5,7 +5,15 @@ from buffered_scanner import BufferedScanner
 from charreader import CharReader
 from expression_evaluator import evaluate_expression
 from parser import parse_program
-from syntax import BlockStmt, Declaration, ExprStmt, PrintStmt, Statement, VarDecl
+from syntax import (
+    BlockStmt,
+    Declaration,
+    ExprStmt,
+    IfStmt,
+    PrintStmt,
+    Statement,
+    VarDecl,
+)
 from token_generator import token_generator
 
 
@@ -82,6 +90,13 @@ class Interpreter:
                         self._interpret_declaration(decl)
                 finally:
                     self._pop_scope()
+            case IfStmt(condition, then_branch, else_branch):
+                value = evaluate_expression(condition, self._scoped_vars)
+                is_truthy = value is not None and value is not False
+                if is_truthy:
+                    self._interpret_statement(then_branch)
+                elif else_branch:
+                    self._interpret_statement(else_branch)
 
     def _interpret_declaration(self, decl: Declaration) -> None:
         match decl:
