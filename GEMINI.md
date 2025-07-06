@@ -65,4 +65,11 @@ For example, suppose you are adding support for `if` clauses. You would then do 
 
 ## Git Repo
 
-The main branch for this project is called `main`.
+- The main branch for this project is called `main`.
+- When creating commits with multiline messages, write the message to a file
+`commit_message.txt`, then commit with `git commit -F commit_message.txt`.
+- When staging code changes, and GEMINI.md also has changes, never stage
+GEMINI.md. GEMINI.md must always be in separate commits that are only about
+Gemini instructions.
+- The first line of a commit message should not be longer than 72 characters,
+and all the other lines should have a maximum of 100 characters.
