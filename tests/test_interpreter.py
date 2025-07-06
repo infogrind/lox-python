@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from expression_evaluator import TypeError, VariableError
 from interpreter import Interpreter
+from parser import ParserError
 
 
 class TestInterpreter(unittest.TestCase):
@@ -49,7 +50,9 @@ class TestInterpreter(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             Interpreter().interpret(["var a = nil;", "print(a + 1);"])
 
-        self.assertEqual(context.exception.message, "Expected: number")
+        self.assertEqual(
+            context.exception.message, "Operands must be two numbers or two strings"
+        )
 
     def test_boolean_variable(self):
         with self.assertOutputs("False"):
@@ -209,3 +212,89 @@ class TestInterpreter(unittest.TestCase):
         # Any non-empty string is considered truthy.
         with self.assertOutputs("yes"):
             Interpreter().interpret('if ("hello") print("yes"); else print("no");')
+
+    def test_complex_expressions(self):
+        with self.assertOutputs("17.0"):
+            Interpreter().interpret("print(3 + 2 * (10 - 4) / 2 + 8);")
+
+    def test_string_concatenation(self):
+        with self.assertOutputs("HelloWorld"):
+            Interpreter().interpret('print("Hello" + "World");')
+
+    def test_mixed_type_addition_error(self):
+        with self.assertRaises(TypeError):
+            Interpreter().interpret('print("Hello" + 5);')
+
+    def test_deeply_nested_blocks_and_scopes(self):
+        with self.assertOutputs("1.0\n2.0\n3.0\n2.0\n1.0"):
+            Interpreter().interpret(
+                [
+                    "var a = 1;",
+                    "print(a);",
+                    "{",
+                    "  var a = 2;",
+                    "  print(a);",
+                    "  {",
+                    "    var a = 3;",
+                    "    print(a);",
+                    "  }",
+                    "  print(a);",
+                    "}",
+                    "print(a);",
+                ]
+            )
+
+    def test_advanced_scoping_with_shadowing_and_redefinition_2(self):
+        with self.assertOutputs("inner\nouter"):
+            Interpreter().interpret(
+                [
+                    'var a = "outer";',
+                    "{",
+                    '  var a = "inner";',
+                    "  print(a);",
+                    "}",
+                    "print(a);",
+                ]
+            )
+
+    def test_complex_if_else_if_ladder(self):
+        with self.assertOutputs("second"):
+            Interpreter().interpret(
+                [
+                    "var a = 10;",
+                    'if (a < 5) print("first");',
+                    'else if (a < 15) print("second");',
+                    'else print("third");',
+                ]
+            )
+
+    def test_logical_operators_in_if(self):
+        with self.assertOutputs("yes"):
+            Interpreter().interpret(
+                'if (true and (false or true)) print("yes"); else print("no");'
+            )
+
+    def test_assignment_in_if_condition(self):
+        with self.assertOutputs("yes"):
+            Interpreter().interpret(
+                [
+                    "var a;",
+                    'if (a = 5) print("yes"); else print("no");',
+                ]
+            )
+
+    def test_undefined_variable_in_expression(self):
+        with self.assertRaises(VariableError):
+            Interpreter().interpret("var a = b + 5;")
+
+    def test_invalid_assignment_target(self):
+        with self.assertRaises(ParserError):
+            Interpreter().interpret("5 = 10;")
+
+    def test_division_by_zero(self):
+        with self.assertRaises(TypeError):
+            Interpreter().interpret("print(10 / 0);")
+
+    def test_unary_negation_on_non_number(self):
+        with self.assertRaises(TypeError):
+            Interpreter().interpret('print(-"hello");')

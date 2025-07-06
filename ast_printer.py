@@ -14,7 +14,9 @@ from syntax import (
     IfStmt,
     LessEqualExpr,
     LessThanExpr,
+    LogicalAnd,
     LogicalNot,
+    LogicalOr,
     Mult,
     Negative,
     Nil,
@@ -71,6 +73,10 @@ def _print_expression(e: Expression) -> str:
             return _print_binary_expression("*", lhs, rhs)
         case Div(lhs, rhs):
             return _print_binary_expression("/", lhs, rhs)
+        case LogicalAnd(lhs, rhs):
+            return _print_binary_expression("and", lhs, rhs)
+        case LogicalOr(lhs, rhs):
+            return _print_binary_expression("or", lhs, rhs)
         case Negative(expr):
             return f"( - {_print_expression(expr)} )"
         case LogicalNot(expr):

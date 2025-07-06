@@ -59,10 +59,10 @@ Enter some code (ctrl-d to exit):
             "1 + true;",
             """\
 Enter some code (ctrl-d to exit):
-> Expected: number:
+> Operands must be two numbers or two strings:
     1: 1 + true;
-           ^
-           ┗--- here
+         ^
+         ┗--- here
 > """,
         )
 

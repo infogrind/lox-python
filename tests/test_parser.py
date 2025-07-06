@@ -273,3 +273,12 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ScannerError) as ctx:
             parse_string("(1 + 2];")
         self.assertEqual(ctx.exception.message, "Invalid token character")
+
+    def test_logical_and(self):
+        self.assertParses("true and false;", "( and true false )")
+
+    def test_logical_or(self):
+        self.assertParses("true or false;", "( or true false )")
+
+    def test_logical_precedence(self):
+        self.assertParses("a or b and c or d;", "( or ( or a ( and b c ) ) d )")

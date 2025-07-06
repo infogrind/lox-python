@@ -181,7 +181,7 @@ class ExpressionEvaluatorTest(unittest.TestCase):
         with self.assertRaises(TypeError) as ctx:
             # Expected type of operand should be at the first parenthesis.
             self._evaluate("1 + ((true != false) == !false)")
-        self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 5))
+        self.assertEqual(ctx.exception.diagnostics.pos, Pos(1, 3))
 
     def test_complex_expressions(self):
         self.assertEvaluates("4 + 7*8/ 93 > 4.60", True)

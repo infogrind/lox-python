@@ -18,7 +18,9 @@ from syntax import (
     IfStmt,
     LessEqualExpr,
     LessThanExpr,
+    LogicalAnd,
     LogicalNot,
+    LogicalOr,
     Mult,
     Negative,
     Nil,
@@ -34,6 +36,7 @@ from syntax import (
     Variable,
 )
 from tokens import (
+    AND,
     BANG,
     BANG_EQUAL,
     ELSE,
@@ -52,6 +55,7 @@ from tokens import (
     MINUS,
     NIL,
     NUMBER,
+    OR,
     PLUS,
     PRINT,
     RBRACE,
@@ -184,6 +188,30 @@ def _parse_equality(tokens: BufferedScanner) -> Expression:
     return expr
 
 
+def _parse_logical_and(tokens: BufferedScanner) -> Expression:
+    expr = _parse_equality(tokens)
+    while tokens.has_next():
+        diag = tokens.diagnostics()
+        if tokens.eat(AND()):
+            expr = LogicalAnd(expr, _parse_equality(tokens), diag=diag)
+        else:
+            break
+
+    return expr
+
+
+def _parse_logical_or(tokens: BufferedScanner) -> Expression:
+    expr = _parse_logical_and(tokens)
+    while tokens.has_next():
+        diag = tokens.diagnostics()
+        if tokens.eat(OR()):
+            expr = LogicalOr(expr, _parse_logical_and(tokens), diag=diag)
+        else:
+            break
+
+    return expr
+
+
 # Syntax:
 #
 # Program       -> Declaration* EOF
@@ -228,7 +256,7 @@ def _parse_assign_or_equality(tokens: BufferedScanner) -> Expression:
     # We try to parse the tokens as an equality. If that's equal to a simple identifier
     # node followed by an equal sign, we convert the parsed equality node (which is
     # a variable node) to an assignment node.
-    ident_or_equality = _parse_equality(tokens)
+    ident_or_equality = _parse_logical_or(tokens)
     diag = tokens.diagnostics()
     if tokens.eat(EQUAL()):
         if not isinstance(ident_or_equality, Variable):

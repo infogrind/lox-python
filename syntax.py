@@ -28,7 +28,9 @@ from diagnostics import Diagnostics
 #
 # Expression    -> Assignment
 # Assignment    -> IDENT EQUAL Expression
-#                  | Equality
+#                  | LogicalOr
+# LogicalOr     -> LogicalAnd ( "or" LogicalAnd )*
+# LogicalAnd    -> Equality ( "and" Equality )*
 # Equality      -> Comparison ( ("==" | "!=") Comparison)*
 # Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
 # Term          -> Factor ( ( "+" | "-") Factor )*
@@ -164,6 +166,18 @@ class Mult(Expression):
 
 @dataclass
 class Div(Expression):
+    lhs: Expression
+    rhs: Expression
+
+
+@dataclass
+class LogicalAnd(Expression):
+    lhs: Expression
+    rhs: Expression
+
+
+@dataclass
+class LogicalOr(Expression):
     lhs: Expression
     rhs: Expression
 

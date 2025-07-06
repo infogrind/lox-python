@@ -11,7 +11,9 @@ from syntax import (
     Grouping,
     LessEqualExpr,
     LessThanExpr,
+    LogicalAnd,
     LogicalNot,
+    LogicalOr,
     Mult,
     Negative,
     Nil,
@@ -86,12 +88,18 @@ def evaluate_expression(expr: Expression, vars={}) -> float | bool | str | None:
         case Div(lhs, rhs):
             x = _evaluate_number(lhs, vars)
             y = _evaluate_number(rhs, vars)
+            if y == 0:
+                raise TypeError("Division by zero", rhs.diag)
             return x / y
         # Terms
         case Add(lhs, rhs):
-            x = _evaluate_number(lhs, vars)
-            y = _evaluate_number(rhs, vars)
-            return x + y
+            x = evaluate_expression(lhs, vars)
+            y = evaluate_expression(rhs, vars)
+            if isinstance(x, float) and isinstance(y, float):
+                return x + y
+            if isinstance(x, str) and isinstance(y, str):
+                return x + y
+            raise TypeError("Operands must be two numbers or two strings", expr.diag)
         case Subtract(lhs, rhs):
             x = _evaluate_number(lhs, vars)
             y = _evaluate_number(rhs, vars)
@@ -126,6 +134,16 @@ def evaluate_expression(expr: Expression, vars={}) -> float | bool | str | None:
             if type(x) is not type(y):
                 raise TypeError(f"Cannot compare {type(x)} and {type(y)}", expr.diag)
             return x != y
+        case LogicalAnd(lhs, rhs):
+            x = evaluate_expression(lhs, vars)
+            if not x:
+                return False
+            return evaluate_expression(rhs, vars)
+        case LogicalOr(lhs, rhs):
+            x = evaluate_expression(lhs, vars)
+            if x:
+                return True
+            return evaluate_expression(rhs, vars)
         case Assignment(target, expr):
             if target not in vars:
                 raise VariableError(
