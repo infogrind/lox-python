@@ -57,7 +57,7 @@ For example, suppose you are adding support for `if` clauses. You would then do 
 
 ## Commit Message Guidelines
 
-- Use backticks for code in commit messages.
+- Use backticks for code in commit messages
 
 ## References
 
@@ -66,4 +66,3 @@ For example, suppose you are adding support for `if` clauses. You would then do 
 ## Git Repo
 
 The main branch for this project is called `main`.
-
