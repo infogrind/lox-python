@@ -34,6 +34,7 @@ from syntax import (
     TrueExpr,
     VarDecl,
     Variable,
+    WhileStmt,
 )
 from tokens import (
     AND,
@@ -66,6 +67,7 @@ from tokens import (
     STRING,
     TRUE,
     VAR,
+    WHILE,
 )
 
 
@@ -337,6 +339,23 @@ def _parse_if_statement(tokens: BufferedScanner) -> IfStmt:
     return IfStmt(condition, then_branch, else_branch, diag=diag)
 
 
+def _parse_while_statement(tokens: BufferedScanner) -> WhileStmt:
+    diag = tokens.diagnostics()
+    tokens.eat(WHILE())
+    lparen_diag = tokens.diagnostics()
+    if not tokens.eat(LPAREN()):
+        raise ParserError("Expected '(' after 'while'", tokens.diagnostics())
+    condition = parse_expression(tokens)
+    if not tokens.eat(RPAREN()):
+        raise ParserError(
+            "Expected ')' after while condition",
+            tokens.diagnostics(),
+            [("Opening parenthesis here", lparen_diag)],
+        )
+
+    return WhileStmt(condition, parse_statement(tokens), diag=diag)
+
+
 def parse_statement(tokens) -> Statement:
     diag = tokens.diagnostics()
     match tokens.peek():
@@ -346,6 +365,8 @@ def parse_statement(tokens) -> Statement:
             stmt = _parse_block_stmt(tokens)
         case IF():
             stmt = _parse_if_statement(tokens)
+        case WHILE():
+            stmt = _parse_while_statement(tokens)
         case _:
             # ExprStmt parsed here, contains a semicolon.
             # The Expression doesnt.

@@ -13,10 +13,12 @@ from diagnostics import Diagnostics
 #                  | ExprStmt
 #                  | BlockStmt
 #                  | IfStmt
+#                  | WhileStmt
 # PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
 # ExprStmt      -> Expression SEMICOLON
 # BlockStmt     -> LBRACE Declaration* RBRACE
 # IfStmt        -> IF LPAREN Expression RPAREN Statement (ELSE Statement)?
+# WhileStmt     -> WHILE LPAREN Expression RPAREN Statement
 #
 # TODO:
 # - Add support for assignments like a.b.c = 3.
@@ -214,3 +216,9 @@ class IfStmt(Statement):
     condition: Expression
     then_branch: Statement
     else_branch: Statement | None
+
+
+@dataclass
+class WhileStmt(Statement):
+    condition: Expression
+    body: Statement

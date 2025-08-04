@@ -282,3 +282,30 @@ class TestParser(unittest.TestCase):
 
     def test_logical_precedence(self):
         self.assertParses("a or b and c or d;", "( or ( or a ( and b c ) ) d )")
+
+    # While loops
+
+    def test_simple_while(self):
+        self.assertParses("while (true) {}", "( while true { } )")
+
+    def test_while_with_multiple_statements(self):
+        self.assertParses(
+            "while (true) { a = a + 1; print(a); }",
+            "( while true { ( = a ( + a 1.0 ) ); ( print a ); } )",
+        )
+
+    def test_while_with_complex_condition(self):
+        self.assertParses(
+            "while (a >= 2 and b <= 4) print(a);",
+            "( while ( and ( >= a 2.0 ) ( <= b 4.0 ) ) ( print a ) )",
+        )
+
+    def test_while_with_missing_opening_parenthesis(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("while a >= 1")
+        self.assertEqual(ctx.exception.message, "Expected '(' after 'while'")
+
+    def test_while_with_missing_closing_parenthesis(self):
+        with self.assertRaises(ParserError) as ctx:
+            parse_string("while (a >= 1 print(a);")
+        self.assertIn("Expected ')'", ctx.exception.message)

@@ -30,6 +30,7 @@ from syntax import (
     TrueExpr,
     VarDecl,
     Variable,
+    WhileStmt,
 )
 
 
@@ -104,6 +105,8 @@ def _print_statement(s: Statement):
                 return f"( if {_print_expression(condition)} {_print_statement(then_branch)} else {_print_statement(else_branch)} )"
             else:
                 return f"( if {_print_expression(condition)} {_print_statement(then_branch)} )"
+        case WhileStmt(condition, body):
+            return f"( while {_print_expression(condition)} {_print_statement(body)} )"
         case _:
             raise RuntimeError(f"Unknown statement type: {s}")
 

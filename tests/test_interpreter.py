@@ -298,3 +298,11 @@ class TestInterpreter(unittest.TestCase):
     def test_unary_negation_on_non_number(self):
         with self.assertRaises(TypeError):
             Interpreter().interpret('print(-"hello");')
+
+    # While loops
+
+    def test_while_loop(self):
+        with self.assertOutputs("1.0\n2.0\n3.0\n"):
+            Interpreter().interpret(
+                ["var a = 1;", "while (a <= 3) {", "  print(a);", "a = a + 1;}"]
+            )

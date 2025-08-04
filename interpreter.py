@@ -13,6 +13,7 @@ from syntax import (
     PrintStmt,
     Statement,
     VarDecl,
+    WhileStmt,
 )
 from token_generator import token_generator
 
@@ -97,6 +98,16 @@ class Interpreter:
                     self._interpret_statement(then_branch)
                 elif else_branch:
                     self._interpret_statement(else_branch)
+            case WhileStmt(condition, body):
+                while evaluate_expression(condition, self._scoped_vars) not in [
+                    None,
+                    False,
+                ]:
+                    self._interpret_statement(body)
+            case _:
+                raise RuntimeError(
+                    f"Unsupported statement type: {stmt.__class__.__name__}"
+                )
 
     def _interpret_declaration(self, decl: Declaration) -> None:
         match decl:
