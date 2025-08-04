@@ -17,11 +17,6 @@ To run the program with a manual REPL loop:
 uv run --script main.py
 ```
 
-To run with some testdata file:
-
-```shell
-uv run --script main.py testdata/tokens.txt
-```
-
-* Unit tests: `uv run pytest`
-* Unit tests with program output and summary: `uv run pytest -rA -s`
+- Unit tests: `uv run pytest`
+- Unit tests with program output and summary: `uv run pytest -rA -s`
+- Monitor changes and run tests: `fd '\.py$' | entr -c -s 'uv run pytest'` (needs `entr`).

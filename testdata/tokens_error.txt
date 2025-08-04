@@ -1,3 +1,0 @@
-(a "test")
-((b c def "ssrf" ("sdf")
-(sdf "ese)
