@@ -11,3 +11,5 @@ wheels/
 
 # Claude
 .claude/settings.local.json
+.coverage
+.DS_Store

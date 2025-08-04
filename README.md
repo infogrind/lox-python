@@ -20,3 +20,23 @@ uv run --script main.py
 - Unit tests: `uv run pytest`
 - Unit tests with program output and summary: `uv run pytest -rA -s`
 - Monitor changes and run tests: `fd '\.py$' | entr -c -s 'uv run pytest'` (needs `entr`).
+
+## Test Coverage
+
+To get coverage data, run
+
+```shell
+uv run coverage run -m pytest
+```
+
+To generate the coverage report, run
+
+```shell
+uv run coverage html
+```
+
+To see a summary report in the terminal, run
+
+```shell
+uv run coverage report
+```
