@@ -201,7 +201,7 @@ class VarDecl(Declaration):
 @dataclass
 class Assignment(Expression):
     target: str
-    expr: "Assignment"
+    expr: Expression
 
 
 @dataclass
