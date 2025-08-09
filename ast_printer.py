@@ -43,7 +43,7 @@ def _print_expression(e: Expression) -> str:
         case Number(value):
             return str(value)
         case String(value):
-            return value
+            return f'"{value}"'
         case TrueExpr():
             return "true"
         case FalseExpr():
@@ -121,7 +121,7 @@ def _print_declaration(d: Declaration) -> str:
         case Statement():
             return _print_statement(d)
         case _:
-            raise RuntimeError("Unknown declaration type: {d}")
+            raise RuntimeError(f"Unknown declaration type: {d}")
 
 
 def print_program(p: Program) -> str:

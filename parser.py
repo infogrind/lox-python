@@ -45,6 +45,7 @@ from tokens import (
     EQUAL,
     EQUAL_EQUAL,
     FALSE,
+    FOR,
     GREATER,
     GREATER_EQUAL,
     IDENT,
@@ -214,43 +215,6 @@ def _parse_logical_or(tokens: BufferedScanner) -> Expression:
     return expr
 
 
-# Syntax:
-#
-# Program       -> Declaration* EOF
-# Declaration   -> VarDecl
-#                  | Statement
-# VarDecl       -> VAR IDENT (EQUAL Expression)? SEMICOLON
-# Statement     -> PrintStmt
-#                  | ExprStmt
-#                  | WhileStmt
-# PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
-# ExprStmt      -> Expression SEMICOLON
-# WhileStmt     -> WHILE LPAREN Expression RPAREN Statement
-#
-# TODO:
-# - Add support for assignments like a.b.c = 3.
-# - Add blocks ({ statement; statement; })
-# - Add if statements
-# - Add function definitions
-# - Add function calls
-# - Add classes
-# - ...?
-#
-#
-# Expression    -> Assignment
-# Assignment    -> IDENT EQUAL Expression
-#                  | Equality
-# Equality      -> Comparison ( ("==" | "!=") Comparison)*
-# Comparison    -> Term ( ( "<" | "<=" | ">" | ">=" ) Term)*
-# Term          -> Factor ( ( "+" | "-") Factor )*
-# Factor        -> Unary ( ( "*" | "/" ) Unary )*
-# Unary         -> ( "-" | "!" ) Primary
-#                  | "+" Expression -> error production
-#                  | Primary
-# Primary       -> NUMBER | STRING | TRUE | FALSE | NIL | IDENT
-#                  | "(" Expression ")"
-
-
 def _parse_assign_or_equality(tokens: BufferedScanner) -> Expression:
     # Parse first IDENT as an expression.
     diag = tokens.diagnostics()
@@ -358,6 +322,82 @@ def _parse_while_statement(tokens: BufferedScanner) -> WhileStmt:
     return WhileStmt(condition, parse_statement(tokens), diag=diag)
 
 
+def _parse_for_statement(tokens: BufferedScanner) -> Statement:
+    diag = tokens.diagnostics()
+    tokens.eat(FOR())
+    lparen_diag = tokens.diagnostics()
+    if not tokens.eat(LPAREN()):
+        raise ParserError("Expected '(' after 'for'", tokens.diagnostics())
+
+    # Initializer
+    init: VarDecl | ExprStmt | None = None
+    if tokens.peek() == VAR():
+        init = _parse_var_decl(tokens)
+    elif tokens.peek() != SEMICOLON():
+        init = ExprStmt(parse_expression(tokens), diag=diag)
+        # An expr statement is an expression plus semicolon, so we still need to eat that.
+        if not tokens.eat(SEMICOLON()):
+            raise ParserError(
+                "Expected ';' after for initializer", tokens.diagnostics()
+            )
+    else:
+        tokens.eat(SEMICOLON())
+
+    # Condition
+    cond: Expression | None = None
+    if not tokens.eat(SEMICOLON()):
+        cond = parse_expression(tokens)
+        if not tokens.eat(SEMICOLON()):
+            raise ParserError(
+                "Expected ';' after for loop condition", tokens.diagnostics()
+            )
+
+    # Post-loop expression
+    post = None
+    if not tokens.peek() == RPAREN():
+        post = parse_expression(tokens)
+
+    if not tokens.eat(RPAREN()):
+        raise ParserError(
+            "Missing ')' in for statement header",
+            tokens.diagnostics(),
+            [("Opening parenthesis here", lparen_diag)],
+        )
+
+    body = parse_statement(tokens)
+    if init is None and post is None:
+        return WhileStmt(cond or TrueExpr(diag=diag), body, diag=diag)
+
+    statements: List[Declaration] = []
+    if init is not None:
+        statements.append(init)
+
+    body_statements: List[Declaration] = [body]
+    if post is not None:
+        body_statements.append(ExprStmt(post, diag=diag))
+
+    # This last bit is a simplification, we need to wrap the for loop's body
+    # inside another block only if there is a post statement.
+    if len(body_statements) > 1:
+        statements.append(
+            WhileStmt(
+                cond or TrueExpr(diag=diag),
+                BlockStmt(body_statements, diag=diag),
+                diag=diag,
+            )
+        )
+    else:
+        statements.append(
+            WhileStmt(
+                cond or TrueExpr(diag=diag),
+                body,
+                diag=diag,
+            )
+        )
+
+    return BlockStmt(statements, diag=diag)
+
+
 def parse_statement(tokens) -> Statement:
     diag = tokens.diagnostics()
     match tokens.peek():
@@ -369,6 +409,8 @@ def parse_statement(tokens) -> Statement:
             stmt = _parse_if_statement(tokens)
         case WHILE():
             stmt = _parse_while_statement(tokens)
+        case FOR():
+            stmt = _parse_for_statement(tokens)
         case _:
             # ExprStmt parsed here, contains a semicolon.
             # The Expression doesnt.

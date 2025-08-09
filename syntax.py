@@ -14,11 +14,15 @@ from diagnostics import Diagnostics
 #                  | BlockStmt
 #                  | IfStmt
 #                  | WhileStmt
+#                  | ForStmt
 # PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
 # ExprStmt      -> Expression SEMICOLON
 # BlockStmt     -> LBRACE Declaration* RBRACE
 # IfStmt        -> IF LPAREN Expression RPAREN Statement (ELSE Statement)?
 # WhileStmt     -> WHILE LPAREN Expression RPAREN Statement
+# ForStmt       -> FOR LPAREN (VarDecl | ExprStmt | SEMICOLON )
+#                      Expresssion? ";"
+#                      Expression? ";" RPAREN Statement
 #
 # TODO:
 # - Add support for assignments like a.b.c = 3.

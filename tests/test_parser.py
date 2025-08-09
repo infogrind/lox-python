@@ -47,7 +47,7 @@ class TestParser(unittest.TestCase):
         self.assertParses("12.34;", "12.34")
 
     def test_string_literal(self):
-        self.assertParses('"foosdf I";', "foosdf I")
+        self.assertParses('"foosdf I";', '"foosdf I"')
 
     def test_grouping(self):
         self.assertParses("( 3 );", "3.0")
@@ -309,3 +309,40 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParserError) as ctx:
             parse_string("while (a >= 1 print(a);")
         self.assertIn("Expected ')'", ctx.exception.message)
+
+    # For loops - syntactic sugar
+    def test_standard_for_loop(self):
+        self.assertParses(
+            """\
+for (var i = 0; i < 5; i = i + 1) {
+  print(i);
+}""",
+            (
+                "{ ( var i 0.0 ); "
+                + "( while ( < i 5.0 ) { "
+                + "{ ( print i ); }; ( = i ( + i 1.0 ) ); }"
+                + " ); }"
+            ),
+        )
+
+    def test_for_loop_without_anything(self):
+        self.assertParses('for (; ;) print("a");', '( while true ( print "a" ) )')
+
+    def test_for_loop_with_condition_only(self):
+        self.assertParses(
+            "for (; i < 10; ) i = i - 1;", "( while ( < i 10.0 ) ( = i ( - i 1.0 ) ) )"
+        )
+
+    def test_for_loop_with_initializer_only(self):
+        self.assertParses(
+            "for (i = 1;;) i = i + 1;",
+            "{ ( = i 1.0 ); ( while true ( = i ( + i 1.0 ) ) ); }",
+        )
+
+    def test_for_loop_with_post_only(self):
+        self.assertParses(
+            "for (;; i = i - 1) print(i);",
+            "{ ( while true { ( print i ); ( = i ( - i 1.0 ) ); } ); }",
+        )
+
+    # TODO: Test for syntax errors in for loops.
