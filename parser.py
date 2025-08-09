@@ -222,8 +222,10 @@ def _parse_logical_or(tokens: BufferedScanner) -> Expression:
 # VarDecl       -> VAR IDENT (EQUAL Expression)? SEMICOLON
 # Statement     -> PrintStmt
 #                  | ExprStmt
+#                  | WhileStmt
 # PrintStmt     -> PRINT LPAREN Expression RPAREN SEMICOLON
 # ExprStmt      -> Expression SEMICOLON
+# WhileStmt     -> WHILE LPAREN Expression RPAREN Statement
 #
 # TODO:
 # - Add support for assignments like a.b.c = 3.
